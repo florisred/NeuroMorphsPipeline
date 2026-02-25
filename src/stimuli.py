@@ -5,6 +5,7 @@ from pathlib import Path
 from os.path import join
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from scipy.io import loadmat
 
 class Stimuli:
 

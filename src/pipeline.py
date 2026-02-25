@@ -1,8 +1,11 @@
 from pathlib import Path
 from os.path import join, isdir
 from warnings import warn
+from src.two_photon import Twophoton
+from plotcreator import PlotCreator
 from src.generate_config import generate_config
 from src.stimuli import Stimuli
+from src.neuropixels import NeuroPixelsData
 import json
 
 class Pipeline:
@@ -11,10 +14,13 @@ class Pipeline:
         # initiate stimuli object for storing the stimuli
 
         self.stimuli = Stimuli()
-        self.neuropixels_data = NeuropixelsData()
+        self.neuropixels_data = NeuroPixelsData()
+        self.two_photon = Twophoton()
+        self.pca_dict = {}
+        self.neuropixels_labels = None
 
         # set preliminary vars
-        project_root = Path(__file__).parent
+        project_root = Path(__file__).parent.parent
         config_dir = project_root / "config"
         settings_file = config_dir / "settings.json"
 
@@ -53,18 +59,34 @@ class Pipeline:
             n_components_gabor = self.settings["num_components_gabor_space"],
             gabor_params = self.settings["gabor_params"]
         )
+        self.pca_dict["images"] = self.stimuli.process_images()
 
     def create_plots(self):
 
-        if len(self.stimuli.pca_dict.keys()) > 0:
-            for key, pca_list in self.stimuli.pca_dict.items():
+        if len(self.pca_dict.keys()) > 0:
+            for key, pca in self.pca_dict.items():
                 print(f"Creating plot for {key}...")
-                pca_data = pca_set[0]
-                explained
-                pass
+                plotcreator = PlotCreator(plot_settings = {
+                    "plot_name" : 'leaves to strawberry',
+                    'do_2d_plots': True,
+                    'do_3d_plots': True,
+                    'do_interactive_plots': True
+                })
+                plotcreator.create_plots(pca[0], pca[2])
 
 
 
 
     def load_neuropixels_data(self):
-        self.neuropixels_data.load_data()
+        self.neuropixels_data.load_data(data_dir=self.settings["DATA_FOLDER"])
+        _, self.pca_dict["neuropixels"], self.neuropixels_labels = self.neuropixels_data.process_neuropixels_data()
+
+
+    def process_two_photon(self):
+        self.two_photon.load_2p_data(
+            data_dir=self.settings["DATA_FOLDER"],
+            data_location=self.settings["PSEUDOPOP_DATA"],
+            label_location=self.settings["PSEUDOPOP_LABELS"]
+        )
+        self.two_photon.calc_mean_per_stimulus_and_scale()
+        self.pca_dict["two_photon"] = self.two_photon.peform_pca()

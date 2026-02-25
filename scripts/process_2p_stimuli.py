@@ -13,13 +13,15 @@ if __name__ == "__main__":
 
             # look for 2p_data folder
             if '2p_data' in directory:
-
+                nm.process_two_photon()
+                nm.create_plots()
                 ## process 2p data
-                pass
+
 
             if 'neuropixels_data' in directory:
 
                 nm.load_neuropixels_data()
+                nm.create_plots()
 
 
             # look for image stimuli data
