@@ -5,21 +5,21 @@ from pathlib import Path
 from os.path import join
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+import pandas as pd
 from scipy.io import loadmat
 
 class Stimuli:
-
+    """"
+    Class that handles t
+    """
     def __init__(self):
         self.images = []
         self.images_flat = []
-        self.images_pca = []
         self.images_gabor = []
         self.image_names_raw = []
-        self.image_names = []
-        self.name_mask = []
         self.pca_dict = {}
         self.data_dir = Path()
-
+        self.stimuli_metadata = pd.DataFrame()
 
     def set_data_dir(self, data_dir):
         self.data_dir = Path(data_dir)
@@ -39,26 +39,35 @@ class Stimuli:
         self._proces_image_names()
 
     def _proces_image_names(self):
-        seen_last_parts = []
+        ## ToDO: make this not hard coded
+        orig_cats = []
+        dst_cats = []
+        step_indeces = []
+        stimuli_metadata = pd.DataFrame()
+        orig_cat_index = 0
+        dst_cat_index = 2
+        step_index_index = 5
+
         for i, img_name in enumerate(self.image_names_raw):
+            label_split =  img_name.split('_')
+            orig_cats.append(label_split[orig_cat_index].lower())
+            dst_cats.append(label_split[dst_cat_index].lower())
+            step_indeces.append(label_split[step_index_index].lower())
+        stimuli_metadata['orig_cat'] = orig_cats
+        stimuli_metadata["dst_cat"] = dst_cats
+        stimuli_metadata['step_index'] = step_indeces
+        stimuli_metadata['pair_key'] = stimuli_metadata['orig_cat'] + '__' + stimuli_metadata["dst_cat"]
+        stimuli_metadata['full_name'] = stimuli_metadata['pair_key'] + '__' + stimuli_metadata['step_index'].astype(str)
+        max_index = max(stimuli_metadata['step_index'].astype(int))
+        stim_types = ['full' if ind == "00" or ind == str(max_index) else 'morph' for ind in stimuli_metadata['step_index'].values]
+        stimuli_metadata['stim_type'] = stim_types
 
-            label_without_png = img_name.split('.')[0]
-            label_without_png_split = label_without_png.split('_')
-            last_part = label_without_png_split[-1]
-            try:
-                last_part = int(last_part)
-                self.name_mask.append(False)
-                name_final = label_without_png_split[0] + label_without_png_split[1] + label_without_png_split[2] + str(
-                    last_part)
-            except:
-                name_final = last_part
-                if last_part.lower() not in seen_last_parts:
-                    seen_last_parts.append(last_part.lower())
-                    self.name_mask.append(True)
-                else:
-                    self.name_mask.append(False)
+        self.stimuli_metadata = stimuli_metadata
 
-            self.image_names.append(name_final)
+
+
+
+
 
 
     def process_images(self, n_components_pixel, n_components_gabor, gabor_params):
@@ -66,6 +75,7 @@ class Stimuli:
 
         self._process_gabor(gabor_params)
         self._process_pca(n_components_pixel, n_components_gabor)
+        return  self.pca_dict
 
 
 
@@ -133,5 +143,5 @@ class Stimuli:
         pca_pixel_model = PCA(n_components=n_components_pixel)
         pca_gabor_model = PCA(n_components=n_components_gabor)
 
-        self.pca_dict["pixel"] = pca_pixel_model.fit_transform(self.images_flat)
-        self.pca_dict["gabor"] = pca_gabor_model.fit_transform(self.images_gabor)
+        self.pca_dict["pixel"] = pca_pixel_model.fit_transform(self.images_flat), None, self.stimuli_metadata
+        self.pca_dict["gabor"] = pca_gabor_model.fit_transform(self.images_gabor), None, self.stimuli_metadata
