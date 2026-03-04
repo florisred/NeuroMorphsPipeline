@@ -1,6 +1,6 @@
 from pathlib import Path
 from warnings import warn
-from src.two_photon_test import Twophoton
+from src.two_photon import Twophoton
 from plotcreator import PlotCreator
 from scripts.generate_config import generate_config
 from src.stimuli import Stimuli
