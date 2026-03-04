@@ -1,0 +1,6 @@
+
+config/
+
+.idea/
+
+src/__pycache__/
