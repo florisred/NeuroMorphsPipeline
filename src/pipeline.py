@@ -1,11 +1,11 @@
 from pathlib import Path
-from os.path import join, isdir
 from warnings import warn
-from src.two_photon import Twophoton
+from src.two_photon_test import Twophoton
 from plotcreator import PlotCreator
-from src.generate_config import generate_config
+from scripts.generate_config import generate_config
 from src.stimuli import Stimuli
 from src.neuropixels import NeuroPixelsData
+import os
 import json
 
 class Pipeline:
@@ -45,34 +45,33 @@ class Pipeline:
 
 
 
-
-    def load_images(self):
-        """
-
-        :return:
-        """
+    def process_stimuli(self):
         self.stimuli.load_images()
-
-    def process_images(self):
-        self.stimuli.process_images(
+        pca_dict = self.stimuli.process_images(
             n_components_pixel = self.settings["num_components_pixel_space"],
             n_components_gabor = self.settings["num_components_gabor_space"],
             gabor_params = self.settings["gabor_params"]
         )
-        self.pca_dict["images"] = self.stimuli.process_images()
+        self.pca_dict["pixel"] = pca_dict["pixel"]
+        self.pca_dict["gabor"] = pca_dict["gabor"]
+
+
 
     def create_plots(self):
-
+        output_folder = Path(self.settings["DATA_FOLDER"]) / 'output' / 'plots'
+        os.makedirs(output_folder, exist_ok=True)
         if len(self.pca_dict.keys()) > 0:
             for key, pca in self.pca_dict.items():
                 print(f"Creating plot for {key}...")
                 plotcreator = PlotCreator(plot_settings = {
-                    "plot_name" : 'leaves to strawberry',
+                    "plot_name" : f'{key}',
                     'do_2d_plots': True,
                     'do_3d_plots': True,
-                    'do_interactive_plots': True
+                    'do_interactive_plots': True,
+                    'do_distances': True,
+                    'data_dir': output_folder,
                 })
-                plotcreator.create_plots(pca[0], pca[2])
+                plotcreator.create_plots(pca[0], pca[2], key)
 
 
 
@@ -88,5 +87,5 @@ class Pipeline:
             data_location=self.settings["PSEUDOPOP_DATA"],
             label_location=self.settings["PSEUDOPOP_LABELS"]
         )
-        self.two_photon.calc_mean_per_stimulus_and_scale()
+        self.pca_dict.update(self.two_photon.partial_pca_full_morphs(choose_transitions=False))
         self.pca_dict["two_photon"] = self.two_photon.peform_pca()
