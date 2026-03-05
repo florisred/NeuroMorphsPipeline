@@ -28,7 +28,7 @@ class Pipeline:
         # check if there is a config file, if not let user generate it
         if not settings_file.is_file():
             warn("Configuration file not found.")
-            if (input("Make config file from defaults? (y/n)").lower() == "y"):
+            if input("Make config file from defaults? (y/n)").lower() == "y":
                 generate_config(
                     config_dir = config_dir,
                     settings_file = settings_file
@@ -41,7 +41,10 @@ class Pipeline:
         with open(settings_file, "r") as f:
             self.settings = json.load(f)
 
-        self.stimuli.set_data_dir(self.settings["DATA_FOLDER"])
+
+        data_dir = Path(self.settings["DATA_FOLDER"])
+        self.session_dirs = [dire for dire in data_dir.iterdir() if 'output' not in dire.name]
+        self.stimuli.set_data_dir(self.session_dirs[0])
 
 
 
@@ -83,9 +86,9 @@ class Pipeline:
 
     def process_two_photon(self):
         self.two_photon.load_2p_data(
-            data_dir=self.settings["DATA_FOLDER"],
+            session_dirs=self.session_dirs,
             data_location=self.settings["PSEUDOPOP_DATA"],
-            label_location=self.settings["PSEUDOPOP_LABELS"]
+            label_location=self.settings["PSEUDOPOP_LABELS"] # ToDo make this the labels list
         )
-        self.pca_dict.update(self.two_photon.partial_pca_full_morphs(choose_transitions=False))
-        self.pca_dict["two_photon"] = self.two_photon.peform_pca()
+        self.pca_dict.update(self.two_photon.perform_pca_subset(choose_transitions=False))
+        self.pca_dict["two_photon"] = self.two_photon.perform_pca()

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import re
 import seaborn as sns
 
 
@@ -37,7 +38,7 @@ class PlotCreator:
 
         print("Creating plots...")
         if self.do_distances and self.pca_type in ['two_photon', 'pixel', 'gabor', 'neuropixel']:
-            self.calculate_distances_half()
+            self.calculate_distances()
         if self.do_2d_plots and self.pca_type not in ['two_photon', 'pixel', 'gabor', 'neuropixel']:
             self._create_2d_plots()
         if self.do_3d_plots and self.pca_type in ['two_photon', 'pixel', 'gabor', 'neuropixel']:
@@ -46,42 +47,33 @@ class PlotCreator:
             self._create_interactive_plot()
 
     def _create_2d_plots(self):
+        data, labels, _ = self.sort_morphs(self.pca, self.labels)
+        numeric_index = np.arange(len(labels))
 
-        is_anchor = self.labels['stim_type'].isin(['anchor'])
-        plt.figure(figsize=(10, 7))
-        unique_labels, numeric_label = np.unique(self.labels['full_name'], return_inverse=True)
-        # 1. Plot all points
-        sc = plt.scatter(self.pca[:, 0], self.pca[:, 1],
-                         c=numeric_label, cmap='viridis', s=50, alpha=0.8)
-
-        # 2. Plot and Label the X markers
-        # We iterate through the indices where is_anchor is True
+        plt.figure(figsize=(12.5, 7.5))
+        loop_data = np.vstack([data, data[0]])
+        plt.plot(loop_data[:, 0], loop_data[:, 1],
+                 color='gray', alpha=0.4, linestyle='--', zorder=1, label='Morph Path')
+        sc = plt.scatter(data[:, 0], data[:, 1],
+                         c=numeric_index, cmap='viridis', s=60, alpha=0.8,
+                         edgecolors='white', zorder=2)
+        is_anchor = labels['stim_type'] == 'anchor'
         for i in np.where(is_anchor)[0]:
-            name = self.labels['full_name'].iloc[i]
-            x, y = self.pca[i, 0], self.pca[i, 1]
-
-            # Draw the X
-            #plt.scatter(x, y, marker='x', s=100, color='black', linewidths=2)
-
-            # Add the text label slightly offset from the point
-            plt.text(x - 1, y - 2, name, fontsize=9, fontweight='bold',
-                     bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
-
-        # 3. Handle the Colorbar with Name Ticks
+            name = labels['morph_name'].iloc[i]
+            plt.text(data[i, 0], data[i, 1] + 0.5, name, fontsize=10,
+                     fontweight='bold', ha='center',
+                     bbox=dict(facecolor='white', alpha=0.7, edgecolor='black', boxstyle='round'))
         cbar = plt.colorbar(sc)
-        cbar.set_ticks(range(len(unique_labels)))
-        cbar.set_ticklabels(unique_labels)
-        cbar.set_label('Stimuli')
-
+        cbar.set_ticks(numeric_index)
+        cbar.set_ticklabels(labels['morph_name'])
         plt.xlabel('PC1')
         plt.ylabel('PC2')
-        plt.title(f'{self.plot_name} 2D {self.pca_type}')
-        plt.grid(True)
+        plt.title(f'{self.plot_name} 2D {self.pca_type} (Closed Loop)')
+        plt.grid(True, linestyle=':', alpha=0.6)
         plt.show()
 
-
     def _create_3d_plots(self):
-        unique_labels, numeric_label = np.unique(self.labels['full_name'], return_inverse=True)
+        unique_labels, numeric_label = np.unique(self.labels['morph_name'], return_inverse=True)
 
         fig = plt.figure(figsize=(10, 8))
         ax = fig.add_subplot(111, projection='3d')
@@ -136,7 +128,7 @@ class PlotCreator:
 
     def _create_interactive_plot(self):
         # 1. Setup Colors with a Gradient for matches
-        for pair_key in self.labels['pair_key']:
+        for pair_key in np.unique(self.labels['pair_key'].dropna()):
             search_term = pair_key
 
             # We find all matching indices first
@@ -163,7 +155,7 @@ class PlotCreator:
                     final_mask_x.append(self.pca[idx, 0])
                     final_mask_y.append(self.pca[idx, 1])
                     final_mask_z.append(self.pca[idx, 2])
-                    final_mask_text.append(self.labels[idx])
+                    final_mask_text.append(self.labels['morph_name'][idx])
                     seen_coords.add(coord)
 
             # 3. Create the Figure
@@ -272,12 +264,17 @@ class PlotCreator:
 
 
     def calculate_distances_half(self):
-        name_stems = self.labels['pair_key'].values
+        ## remove all the anchors
+        anchor_mask = self.labels['stim_type'] != 'anchor'
+        labels_masked = self.labels[anchor_mask]
+        data_masked = self.pca[anchor_mask]
+
+        name_stems = labels_masked['pair_key'].values
         all_distances = []
         all_distances_cum = []
         for stem in np.unique(name_stems):
-            mask = self.labels['pair_key'] == stem
-            pca_masked = self.pca[mask, :2]
+            mask = labels_masked['pair_key'] == stem
+            pca_masked = data_masked[mask, :2]
             pca_masked= pca_masked[:5,:]
             distances = [np.linalg.norm(pca_masked[i+1] - pca_masked[i]) for i in range(len(pca_masked)-1)]
             cumsum_differences = np.cumsum(distances)
@@ -321,3 +318,50 @@ class PlotCreator:
         )
         plt.title(f"Mean Distance (cumulative) {self.pca_type}")
         plt.show()
+
+    @staticmethod
+    def sort_morphs(data, labels):
+        """
+        Returns a list of integer indices that sorts the input
+        according to the cyclical material path.
+        """
+        morph_names = labels['morph_name'].values
+        anchor_order = sorted(labels[labels['stim_type'] == 'anchor']['morph_name'].values)
+
+        path = []
+        for i in range(len(anchor_order)):
+            start = anchor_order[i]
+            end = anchor_order[(i + 1) % len(anchor_order)]
+            path.append((start, end))
+
+        sorted_names = []
+        for start, end in path:
+            # 1. Add the anchor
+            if start in morph_names:
+                sorted_names.append(start)
+
+            # 2. Find and sort the transition leg
+            leg = []
+            for m in morph_names:
+                if start in m and end in m and start != end:
+                    match = re.search(rf"{start}_([\d.]+)", m)
+                    if match:
+                        weight = float(match.group(1))
+                        leg.append((m, weight))
+
+            leg.sort(key=lambda x: x[1], reverse=True)
+            sorted_names.extend([m[0] for m in leg])
+
+        # --- THE INTEGRATION STEP ---
+        # Create a mapping of {name: desired_position}
+        name_to_pos = {name: i for i, name in enumerate(sorted_names)}
+
+        # Generate the index array based on where each current label should go
+        # This handles duplicates if your 'morph_names' has multiple rows per morph
+        sorted_idx = sorted(range(len(morph_names)),
+                            key=lambda k: name_to_pos.get(morph_names[k], 999))
+
+        sorted_labels = labels.iloc[sorted_idx]
+        sorted_data = data[sorted_idx]
+
+        return sorted_data, sorted_labels, sorted_idx
