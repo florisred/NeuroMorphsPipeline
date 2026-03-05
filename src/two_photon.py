@@ -39,6 +39,7 @@ class Twophoton:
         index_df= combined_df.index.to_frame(index=False, name='morph_name')
         labels_df = index_df.merge(labels.drop_duplicates('morph_name'), on='morph_name', how='left')
 
+
         scaler = StandardScaler()
         scaled_combined_df = pd.DataFrame(scaler.fit_transform(combined_df))
         self.data_df = scaled_combined_df
@@ -90,7 +91,7 @@ class Twophoton:
                  sorted stimuli joined by '__'.
         :rtype: list[tuple[str, str, str]]
         """
-        transitions = self.labels["pair_key"].values
+        transitions = self.labels["pair_key"].dropna().values
         unique_stimuli = set()
         for t in transitions:
             unique_stimuli.update(t.split('__'))
@@ -272,5 +273,6 @@ class Twophoton:
             'anchor',
             'morph'
         )
+        metadata_df.loc[metadata_df['stim_type'] == 'anchor', 'pair_key'] = np.nan
         return metadata_df
 

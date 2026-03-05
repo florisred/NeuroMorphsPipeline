@@ -211,11 +211,13 @@ class PlotCreator:
 
 
     def calculate_distances(self):
-        name_stems = self.labels['pair_key'].values
+        name_stems = self.labels['pair_key'].dropna().values
         all_distances = []
         all_distances_cum = []
         for stem in np.unique(name_stems):
             mask = self.labels['pair_key'] == stem
+            anchor_mask = self.labels['morph_name'].isin(stem.split('__'))
+            mask = mask | anchor_mask
             pca_masked = self.pca[mask, :2]
             distances = [np.linalg.norm(pca_masked[i+1] - pca_masked[i]) for i in range(len(pca_masked)-1)]
             cumsum_differences = np.cumsum(distances)
@@ -233,7 +235,7 @@ class PlotCreator:
         sem_distance_cum = np.std(all_distances_cum, axis=0)
 
         # Plot 1: Mean Distances
-        plt.figure(figsize=(10, 5))
+        plt.figure(figsize=(10, 7.5))
         plt.plot(mean_distance, label='Mean Distance', color='blue')
         # Adding the SEM/STD ribbon
         plt.fill_between(
@@ -248,7 +250,7 @@ class PlotCreator:
         plt.show()
 
         # Plot 2: Cumulative Mean Distances
-        plt.figure(figsize=(10, 5))
+        plt.figure(figsize=(10, 7.5))
         plt.plot(mean_distance_cum, label='Mean Cumulative', color='green')
         # Adding the SEM/STD ribbon
         plt.fill_between(
