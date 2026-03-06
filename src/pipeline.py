@@ -1,23 +1,22 @@
 from pathlib import Path
 from warnings import warn
-from src.two_photon import Twophoton
+from src.three_photon import Twophoton
 from plotcreator import PlotCreator
 from scripts.generate_config import generate_config
 from src.stimuli import Stimuli
 from src.neuropixels import NeuroPixelsData
 import os
 import json
+from src.pca import PCAPerformer
 
 class Pipeline:
 
     def __init__(self):
         # initiate stimuli object for storing the stimuli
 
-        self.stimuli = Stimuli()
-        self.neuropixels_data = NeuroPixelsData()
-        self.two_photon = Twophoton()
+
         self.pca_dict = {}
-        self.neuropixels_labels = None
+        self.data_dict = {}
 
         # set preliminary vars
         project_root = Path(__file__).parent.parent
@@ -43,20 +42,22 @@ class Pipeline:
 
 
         data_dir = Path(self.settings["DATA_FOLDER"])
-        self.session_dirs = [dire for dire in data_dir.iterdir() if 'output' not in dire.name]
-        self.stimuli.set_data_dir(self.session_dirs[0])
+        self.session_dirs = [dire for dire in data_dir.iterdir() if dire.name not in ["output", "stimuli"] and not dire.name.startswith(".")]
 
 
 
     def process_stimuli(self):
-        self.stimuli.load_images()
-        pca_dict = self.stimuli.process_images(
-            n_components_pixel = self.settings["num_components_pixel_space"],
-            n_components_gabor = self.settings["num_components_gabor_space"],
-            gabor_params = self.settings["gabor_params"]
+        stimuli = Stimuli(
+            data_dir = self.settings["DATA_FOLDER"]
         )
-        self.pca_dict["pixel"] = pca_dict["pixel"]
-        self.pca_dict["gabor"] = pca_dict["gabor"]
+        self.data_dict.update(stimuli.process_images(
+            gabor_params = self.settings["gabor_params"]
+        ))
+
+    def run_pca(self):
+        pca_performer = PCAPerformer(data_dict=self.data_dict)
+        self.pca_dict = pca_performer.run_pca_analysis()
+        test = 1
 
 
 
@@ -80,15 +81,15 @@ class Pipeline:
 
 
     def load_neuropixels_data(self):
-        self.neuropixels_data.load_data(data_dir=self.settings["DATA_FOLDER"])
-        _, self.pca_dict["neuropixels"], self.neuropixels_labels = self.neuropixels_data.process_neuropixels_data()
+        neuropixels_data = NeuroPixelsData()
+        neuropixels_data.load_data(data_dir=self.settings["DATA_FOLDER"])
+        _, self.pca_dict["neuropixels"], self.neuropixels_labels = neuropixels_data.process_neuropixels_data()
 
 
     def process_two_photon(self):
-        self.two_photon.load_2p_data(
+        two_photon = Twophoton()
+        self.data_dict['two_photon'] = two_photon.load_2p_data(
             session_dirs=self.session_dirs,
-            data_location=self.settings["PSEUDOPOP_DATA"],
-            label_location=self.settings["PSEUDOPOP_LABELS"] # ToDo make this the labels list
+            data_location=self.settings["PSEUDOPOP_DATA"]
         )
-        self.pca_dict.update(self.two_photon.perform_pca_subset(choose_transitions=False))
-        self.pca_dict["two_photon"] = self.two_photon.perform_pca()
+        test=1

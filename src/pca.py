@@ -1,8 +1,4 @@
-from itertools import groupby
-from os.path import join
-from pathlib import Path
 import pandas as pd
-import h5py
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -10,62 +6,78 @@ import itertools
 
 
 
-class Twophoton:
-    def __init__(self):
-        self.data_df = None
-        self.labels = None
-        self.processed_df = None
-        self.labels_list = ["y/pair_key", "y/step_index", "y/src_cat", "y/dst_cat", "y/norm_step", "y/stim_type"]
+class PCAPerformer:
+    def __init__(self, data_dict):
+        self.data_dict = data_dict
+        self.pca_dict = {}
 
-    def load_2p_data(self, session_dirs, data_location, label_location):
+    def run_pca_analysis(self):
+        for key, data in self.data_dict.items():
+            labels = data["labels"]
+            data_df = data['data']
+            pca_name = key
+
+            # run the normal pca with all data
+            self.pca_dict[f'{pca_name}_full'] = self._perform_pca(
+                labels=labels,
+                data_df=data_df
+            )
+
+            # run the subset pca
+            self.pca_dict.update(self._perform_pca_subset(
+                labels=labels,
+                data_df=data_df,
+                pca_key = pca_name
+            ))
+        return self.pca_dict
+
+    def _perform_pca(self, data_df, labels, transitions = None):
+        """"
+        Main function of this class. It takes the grouped activation data and the corresponding labels. It then calculates
+        the so-called anchor points of the stimuli, and adds these. These are the average activation of the full morphs.
+
+        It then creates a PCA space from only these anchor points.
+        It then calculates the coordinates of all activation data based on this PCA space, and returns it.
         """
 
-        """
-        data_dfs = []
-        for session_dir in session_dirs:
 
-            two_photon_folder = join(session_dir, "2p_data")
-            file = list(Path(two_photon_folder).glob("*.h5"))
-            if len(file) != 1: raise AssertionError(f"Need exactly one .hy file in {two_photon_folder}")
-            f = h5py.File(file[0], 'r')
-            data = pd.DataFrame(f[data_location]).dropna(axis=0, how='all')
-            labels = self._load_list(f, self.labels_list)
-            grouped_data, index_df = self._calc_mean_per_stimulus(data, labels)
-            grouped_data.index = index_df['morph_name']
-            data_dfs.append(grouped_data)
+        if transitions is not None:
+            data_df, labels = self._filter_transitions(
+                data_df=data_df,
+                labels = labels,
+                transitions=transitions
+            )
 
-        # concatinate and scale
-        combined_df = pd.concat(data_dfs, axis=1, join='inner')
-        index_df= combined_df.index.to_frame(index=False, name='morph_name')
-        labels_df = index_df.merge(labels.drop_duplicates('morph_name'), on='morph_name', how='left')
+        anchors = self._extract_anchors(
+            data_df = data_df,
+            labels = labels
+        )
+        pca = PCA(n_components=(min(len(anchors), 4)))
+        te_stankie = pca.fit_transform(anchors)
+        variance_explained = pca.explained_variance_
+        transformed_data = pca.transform(data_df)
 
-
-        scaler = StandardScaler()
-        scaled_combined_df = pd.DataFrame(scaler.fit_transform(combined_df))
-        self.data_df = scaled_combined_df
-        self.labels = labels_df
-
-        return scaled_combined_df, labels_df
+        return transformed_data, variance_explained, labels
 
 
-
-
-    def perform_pca_subset(self, choose_transitions = False):
+    def _perform_pca_subset(self, data_df, labels, pca_key, choose_transitions = False):
         """
         """
         if choose_transitions:
-            triplets = [self._io_partial_pca()]
+            triplets = [self._io_partial_pca(labels)]
             quadruplets = []
         else:
-            triplets = self._find_triplets()
-            quadruplets = self._find_quadruplet_chains()
+            triplets = self._find_triplets(labels)
+            quadruplets = self._find_quadruplet_chains(labels)
         pca_dict = {}
 
         for triplet in triplets:
             bases =  np.unique([trip.split("__") for trip in triplet])
             pca_name = f"triplet"
             for base in bases: pca_name += f'-{base}'
-            pca_dict[pca_name] = self.perform_pca(
+            pca_dict[f'{pca_key}_{pca_name}'] = self._perform_pca(
+                data_df=data_df,
+                labels=labels,
                 transitions=triplet
             )
 
@@ -73,13 +85,17 @@ class Twophoton:
             bases = np.unique([quad.split("__") for quad in quadruplet])
             pca_name = f"quadruplet"
             for base in bases: pca_name += f'-{base}'
-            pca_dict[pca_name] = self.perform_pca(
+            pca_dict[f'{pca_key}_{pca_name}'] = self._perform_pca(
+                data_df=data_df,
+                labels=labels,
                 transitions=quadruplet
             )
-
         return pca_dict
 
-    def _find_triplets(self):
+
+
+    @staticmethod
+    def _find_triplets(labels):
         """
         Finds all possible triplets of unique stimuli where each triplet forms a complete triangle
         based on the transitions present in the dataset.
@@ -93,7 +109,7 @@ class Twophoton:
                  sorted stimuli joined by '__'.
         :rtype: list[tuple[str, str, str]]
         """
-        transitions = self.labels["pair_key"].dropna().values
+        transitions = labels["pair_key"].dropna().values
         unique_stimuli = set()
         for t in transitions:
             unique_stimuli.update(t.split('__'))
@@ -109,7 +125,7 @@ class Twophoton:
         print(possible_triplets)
         return possible_triplets
 
-    def _find_quadruplet_chains(self):
+    def _find_quadruplet_chains(self, labels):
         """
         Finds and returns all possible quadruplet chains formed by a set of nodes, where each chain forms
         a single ring (cyclic path). The method identifies chains based on predefined edge relationships
@@ -127,8 +143,8 @@ class Twophoton:
         """
         # 1. Standardize the edges into a set of frozensets for fast lookup
         edges_set = set()
-        source_cat = self.labels["src_cat"].tolist()
-        dst_cat = self.labels["dst_cat"].tolist()
+        source_cat = labels["src_cat"].tolist()
+        dst_cat = labels["dst_cat"].tolist()
         for src, dst in zip(source_cat, dst_cat):
             edges_set.add(frozenset((src, dst)))
 
@@ -162,8 +178,8 @@ class Twophoton:
 
         return found_chains_as_labels
 
-    def _io_partial_pca(self):
-        unique_trans = np.unique(self.labels["pair_key"])
+    def _io_partial_pca(self, labels):
+        unique_trans = np.unique(labels["pair_key"])
         chosen_transitions = []
         print("Possible transisitions:")
         for trans in unique_trans:
@@ -182,41 +198,6 @@ class Twophoton:
                 raise AssertionError("what the hell")
         return chosen_transitions
 
-    def _calc_mean_per_stimulus(self, data_df, labels):
-        grouped_data = data_df.T.groupby(labels["morph_name"].values).mean()
-        grouped_data_labels = labels.drop_duplicates(subset='morph_name').sort_values(by=['morph_name'])
-        return grouped_data, grouped_data_labels
-
-
-    def perform_pca(self, transitions = None):
-        """"
-        Main function of this class. It takes the grouped activation data and the corresponding labels. It then calculates
-        the so-called anchor points of the stimuli, and adds these. These are the average activation of the full morphs.
-
-        It then creates a PCA space from only these anchor points.
-        It then calculates the coordinates of all activation data based on this PCA space, and returns it.
-        """
-
-        labels = self.labels
-        data_df = self.data_df
-
-        if transitions is not None:
-            data_df, labels = self._filter_transitions(
-                data_df=data_df,
-                labels = labels,
-                transitions=transitions
-            )
-
-        anchors = self._extract_anchors(
-            data_df = data_df,
-            labels = labels
-        )
-        pca = PCA(n_components=(min(len(anchors), 4)))
-        te_stankie = pca.fit_transform(anchors)
-        variance_explained = pca.explained_variance_
-        transformed_data = pca.transform(data_df)
-
-        return transformed_data, variance_explained, labels
 
     @staticmethod
     def _filter_transitions(data_df, labels, transitions):
@@ -240,36 +221,4 @@ class Twophoton:
         is_anchor = labels['stim_type'] == 'anchor'
         anchor_data = data_df[is_anchor]
         return anchor_data
-
-
-
-    @staticmethod
-    def _load_list(f, metadata_list):
-        metadata_dataframe = pd.DataFrame()
-        for metadata_location in metadata_list:
-            meta_name = metadata_location.split("/")[-1]
-            metadata_array = np.array(f[metadata_location]).flatten()
-            metadata_dataframe[meta_name] = metadata_array.astype(str)
-        metadata_dataframe = metadata_dataframe.T
-        metadata_df = metadata_dataframe.T
-        is_src = metadata_df['stim_type'] == 'endpoint_src'
-        is_dst = metadata_df['stim_type'] == 'endpoint_dst'
-        partial_names = (
-                metadata_df['src_cat'] + "_" +
-                (1-metadata_df['norm_step'].astype(float)).round(2).astype(str) + "_" +
-                metadata_df['dst_cat'] + "_" +
-                metadata_df['norm_step'].astype(float).round(2).astype(str)
-        )
-        metadata_df['morph_name'] = np.where(
-            is_src,
-            metadata_df['src_cat'],
-            np.where(is_dst, metadata_df['dst_cat'], partial_names)
-        )
-        metadata_df['stim_type'] = np.where(
-            is_src | is_dst,
-            'anchor',
-            'morph'
-        )
-        metadata_df.loc[metadata_df['stim_type'] == 'anchor', 'pair_key'] = np.nan
-        return metadata_df
 

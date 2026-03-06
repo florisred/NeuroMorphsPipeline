@@ -1,7 +1,6 @@
 import numpy as np
 from pathlib import Path
 from os.path import join
-import spikeinterface.extractors as se
 import pandas as pd
 from scipy.io import loadmat
 
