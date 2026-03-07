@@ -63,12 +63,13 @@ class PCAPerformer:
     def _perform_pca_subset(self, data_df, labels, pca_key, choose_transitions = False):
         """
         """
+        max_triplets=4
         if choose_transitions:
             triplets = [self._io_partial_pca(labels)]
             quadruplets = []
         else:
-            triplets = self._find_triplets(labels)
-            quadruplets = self._find_quadruplet_chains(labels)
+            triplets = self._find_triplets(labels)[:max_triplets]
+            quadruplets = self._find_quadruplet_chains(labels)[:max_triplets]
         pca_dict = {}
 
         for triplet in triplets:
