@@ -37,13 +37,14 @@ class PlotCreator:
 
 
         print("Creating plots...")
-        if self.do_distances and self.pca_type in ['two_photon', 'pixel', 'gabor', 'neuropixel']:
+        is_full = 'full' in self.pca_type
+        if self.do_distances and is_full:
             self.calculate_distances()
-        if self.do_2d_plots and self.pca_type not in ['two_photon', 'pixel', 'gabor', 'neuropixel']:
+        if self.do_2d_plots and not is_full:
             self._create_2d_plots()
-        if self.do_3d_plots and self.pca_type in ['two_photon', 'pixel', 'gabor', 'neuropixel']:
+        if self.do_3d_plots and is_full:
             self._create_3d_plots()
-        if self.do_interactive_plots and self.pca_type in ['two_photon', 'pixel', 'gabor', 'neuropixel']:
+        if self.do_interactive_plots and is_full:
             self._create_interactive_plot()
 
     def _create_2d_plots(self):
