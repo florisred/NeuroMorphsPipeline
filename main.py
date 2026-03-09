@@ -1,16 +1,21 @@
-# This is a sample Python script.
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+from src.pipeline import Pipeline
+
+if __name__ == "__main__":
+
+    nm = Pipeline()
+
+    nm.process_two_photon()
+    nm.process_stimuli()
+    nm.run_pca()
+    nm.run_rdm()
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+
+#     nm.load_neuropixels_data()
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+    nm.create_plots()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+

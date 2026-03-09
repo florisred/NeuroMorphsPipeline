@@ -1,13 +1,13 @@
 from pathlib import Path
 from warnings import warn
-from src.three_photon import Twophoton
+from src.two_photon import TwoPhoton
 from plotcreator import PlotCreator
 from scripts.generate_config import generate_config
 from src.stimuli import Stimuli
 from src.neuropixels import NeuroPixelsData
 import os
 import json
-from src.pca import PCAPerformer
+from src.rdm import RepresentationalDissimilarityMatrix
 
 class Pipeline:
 
@@ -17,6 +17,8 @@ class Pipeline:
 
         self.pca_dict = {}
         self.data_dict = {}
+
+
 
         # set preliminary vars
         project_root = Path(__file__).parent.parent
@@ -44,20 +46,21 @@ class Pipeline:
         data_dir = Path(self.settings["DATA_FOLDER"])
         self.session_dirs = [dire for dire in data_dir.iterdir() if dire.name not in ["output", "stimuli"] and not dire.name.startswith(".")]
 
-
+        self.two_photon = TwoPhoton()
+        self.stimuli = Stimuli(
+            data_dir=self.settings["DATA_FOLDER"]
+        )
 
     def process_stimuli(self):
-        stimuli = Stimuli(
-            data_dir = self.settings["DATA_FOLDER"]
-        )
-        self.data_dict.update(stimuli.process_images(
-            gabor_params = self.settings["gabor_params"]
-        ))
 
-    def run_pca(self):
-        pca_performer = PCAPerformer(data_dict=self.data_dict)
-        self.pca_dict = pca_performer.run_pca_analysis()
-        test = 1
+        test=1
+
+
+
+
+    def run_rdm(self):
+        rdm = RepresentationalDissimilarityMatrix(pca_dict=self.pca_dict)
+        rdm.run_rdm()
 
 
 
@@ -87,9 +90,7 @@ class Pipeline:
 
 
     def process_two_photon(self):
-        two_photon = Twophoton()
-        self.data_dict['two_photon'] = two_photon.load_2p_data(
+        self.data_dict['two-photon'] = self.two_photon.load_2p_data(
             session_dirs=self.session_dirs,
             data_location=self.settings["PSEUDOPOP_DATA"]
         )
-        test=1

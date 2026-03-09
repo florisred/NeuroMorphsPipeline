@@ -4,44 +4,10 @@ from pathlib import Path
 import pandas as pd
 import h5py
 import numpy as np
-from sklearn.preprocessing import StandardScaler
-from utils import calc_mean_per_stimulus, scale_session
-from sklearn.decomposition import PCA
-import itertools
+from abc import ABC
 
+class TwoPhotonHelper(ABC):
 
-class Twophoton:
-    def __init__(self):
-        self.data_df = None
-        self.labels = None
-        self.processed_df = None
-        self.labels_list = ["y/pair_key", "y/step_index", "y/src_cat", "y/dst_cat", "y/norm_step", "y/stim_type"]
-
-    def load_2p_data(self, session_dirs, data_location):
-        """
-
-        """
-        data_dfs = []
-        for session_dir in session_dirs:
-
-            data, labels = self._load_h5_file(
-                session_dir=session_dir,
-                data_location=data_location
-            )
-            grouped_data, index_df = calc_mean_per_stimulus(data, labels)
-            data_dfs.append(grouped_data)
-
-        combined_df, self.labels = self._concatenate(
-            data_dfs=data_dfs,
-            labels=labels
-        )
-        self.data_df = scale_session(combined_df)
-
-        data_dict = {
-            'data': self.data_df,
-            'labels': self.labels
-        }
-        return data_dict
 
     def _load_h5_file(self, session_dir, data_location):
         two_photon_folder = join(session_dir, "2p_data")
@@ -88,6 +54,7 @@ class Twophoton:
         index_df= combined_df.index.to_frame(index=False, name='morph_name')
         labels_df = index_df.merge(labels.drop_duplicates('morph_name'), on='morph_name', how='left')
         return combined_df, labels_df
+
 
 
 
