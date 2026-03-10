@@ -1,10 +1,10 @@
 from utils import calc_mean_per_stimulus, scale_session
-from MixIns.pcaMixin import PCAMixin
+from MixIns.AnalysisMixin import AnalysisMixin
 from helper.two_photon_helper import TwoPhotonHelper
 
 
 
-class TwoPhoton(PCAMixin, TwoPhotonHelper):
+class TwoPhoton(AnalysisMixin, TwoPhotonHelper):
     def __init__(self):
         self.data_df = None
         self.labels = None
