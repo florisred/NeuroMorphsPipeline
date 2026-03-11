@@ -1,13 +1,4 @@
-from itertools import groupby
-from os.path import join
-from pathlib import Path
-import pandas as pd
-import h5py
-import numpy as np
-from sklearn.preprocessing import StandardScaler
-from utils import calc_mean_per_stimulus, scale_session
-from sklearn.decomposition import PCA
-import itertools
+from utils.utils import calc_mean_per_stimulus, scale_session
 
 
 class Twophoton:

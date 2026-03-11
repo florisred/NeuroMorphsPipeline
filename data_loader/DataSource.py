@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 import itertools
 from data_loader.TrialMetadata import TrialMetadata
+import numpy as np
 
 
 class DataSource(ABC):
@@ -12,7 +13,10 @@ class DataSource(ABC):
         self.file_paths = file_paths
         self.data = None
         self.metadata = TrialMetadata()
+        self.data_type = 'Unknown'
 
+    def get_data_type(self) -> str:
+        return self.data_type
 
     @abstractmethod
     def load_data(self):
@@ -60,10 +64,27 @@ class DataSource(ABC):
 
         return found_cycles
 
-    # @abstractmethod
-    # def get_pca(self):
-    #     pass
-    # @abstractmethod
-    # def group_data(self):
-    #     pass
+
+
+    def filter_transitions(self, transitions: list[str]):
+        mask1 = self.metadata.get_pair_keys(
+            unique=False,
+            dropna=False,
+            as_series=True
+        ).isin(transitions)
+        relevant_anchors = np.unique(
+            [texture for transition in transitions for texture in transition.split('__')])
+        mask_relevant_morphs = self.metadata.get_morph_names().isin(relevant_anchors)
+        final_mask = mask1 | mask_relevant_morphs
+        filtered_data = self.data[final_mask]
+        filtered_labels = self.metadata.apply_mask(final_mask)
+        return filtered_data, filtered_labels
+
+    def extract_anchors(self):
+        mask = self.metadata.get_anchor_mask()
+        filtered_data = self.data[mask]
+        return filtered_data
+
+
+
 

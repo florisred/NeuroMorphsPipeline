@@ -6,6 +6,7 @@ import numpy.typing as npt
 class TrialMetadata:
     def __init__(self):
         self.metadata_df = pd.DataFrame()
+        self.trial_lens = []
 
     def process_and_append(self, raw_trials_metadata_df: pd.DataFrame):
         """
@@ -42,16 +43,40 @@ class TrialMetadata:
             np.where(is_dst, df['dst_cat'], partial_names)
         )
         df.loc[df['stim_type'] == 'anchor', 'pair_key'] = np.nan
-        self.metadata_df = pd.concat([self.metadata_df, df], ignore_index=True)
+        df['src_cat'] = np.where(
+            df['stim_type'] == 'anchor',
+            np.nan,
+            df['src_cat']
+        )
+        df['dst_cat'] = np.where(
+            df['stim_type'] == 'anchor',
+            np.nan,
+            df['dst_cat']
+        )
+        df['step_index'] = np.where(
+            df['stim_type'] == 'anchor',
+            np.nan,
+            df['src_cat']
+        )
+        df['norm_step'] = np.where(
+            df['stim_type'] == 'anchor',
+            np.nan,
+            df['src_cat']
+        )
+        df.index = df['morph_name']
+        df.rename_axis('morph', inplace=True)
+        self.trial_lens.append(df.shape[0])
+        self.metadata_df = pd.concat([self.metadata_df, df])
+
 
     def synchronize_with_data(self, combined_df: pd.DataFrame):
         """
         Drops all the trials that are not in the provided dataframe. Useful when having combined multiple sessions
         where not all shown trials were in each session.
         """
-        self.metadata_df = self.metadata_df.drop_duplicates(subset='morph_name')
-        index_df = combined_df.index.to_frame(index=False, name='morph_name')
-        self.metadata_df = index_df.merge(self.metadata_df, on='morph_name', how='left')
+        metadata_lookup = self.metadata_df.drop_duplicates(subset='morph_name')
+
+        self.metadata_df = metadata_lookup.reindex(combined_df.index).rename_axis(index='morph')
 
     def get_morph_names(self) -> pd.Series:
         """
@@ -61,6 +86,7 @@ class TrialMetadata:
 
     def get_pair_keys(
             self,
+            transitions: list = None,
             unique: bool = True,
             dropna: bool = True,
             as_series: bool = False
@@ -79,5 +105,26 @@ class TrialMetadata:
         else:
             return pair_keys
 
+
+    def get_shared_morphs(self):
+        """
+        returns all morphs that are in all sessions
+        """
+        morphs_per_session = []
+        prev_session_index = 0
+        for i, session_index in enumerate(self.trial_lens):
+            morphs_in_session = self.get_morph_names()[prev_session_index:prev_session_index + session_index]
+            unique_morphs = set(morphs_in_session.unique())
+            morphs_per_session.append(unique_morphs)
+            prev_session_index += session_index
+        shared_morphs = set.intersection(*morphs_per_session)
+        return list(shared_morphs)
+
+    def apply_mask(self, mask):
+        return self.metadata_df[mask]
+
+    def get_anchor_mask(self):
+        mask = self.metadata_df['morph_type'] == 'anchor'
+        return mask
 
 

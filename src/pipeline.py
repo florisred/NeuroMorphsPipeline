@@ -9,6 +9,7 @@ import os
 import json
 from src.pca import PCAPerformer
 from data_loader.TwoPhotonDataSource import TwoPhotonDataSource
+from data_loader.StimulusDataSource import StimulusGaborDataSource, StimulusPixelWiseDataSource
 
 class Pipeline:
 
@@ -42,8 +43,8 @@ class Pipeline:
             self.settings = json.load(f)
 
 
-        data_dir = Path(self.settings["DATA_FOLDER"])
-        self.session_dirs = [dire for dire in data_dir.iterdir() if dire.name not in ["output", "stimuli"] and not dire.name.startswith(".")]
+        self.data_dir = Path(self.settings["DATA_FOLDER"])
+        self.session_dirs = [dire for dire in self.data_dir.iterdir() if dire.name not in ["output", "stimuli"] and not dire.name.startswith(".")]
 
 
     def test(self):
@@ -52,6 +53,19 @@ class Pipeline:
             data_location=self.settings["PSEUDOPOP_DATA"]
         )
         two_photon.load_data()
+        transitions = two_photon.find_stimulus_cycles(n=3)[0]
+        transition_data, transition_labels = two_photon.filter_transitions(transitions)
+
+        stimulus_gabor = StimulusGaborDataSource(
+            file_paths=[self.data_dir / 'stimuli'],
+            gabor_params = self.settings["gabor_params"],
+            output_dir= self.data_dir / 'output',
+        )
+        stimulus_gabor.load_data()
+        stimulus_pixel = StimulusPixelWiseDataSource(
+            file_paths=[self.data_dir / 'stimuli'],
+        )
+        stimulus_pixel.load_data()
         test = 1
 
 
