@@ -8,6 +8,7 @@ from src.neuropixels import NeuroPixelsData
 import os
 import json
 from src.pca import PCAPerformer
+from data_loader.TwoPhotonDataSource import TwoPhotonDataSource
 
 class Pipeline:
 
@@ -43,6 +44,16 @@ class Pipeline:
 
         data_dir = Path(self.settings["DATA_FOLDER"])
         self.session_dirs = [dire for dire in data_dir.iterdir() if dire.name not in ["output", "stimuli"] and not dire.name.startswith(".")]
+
+
+    def test(self):
+        two_photon = TwoPhotonDataSource(
+            file_paths=self.session_dirs,
+            data_location=self.settings["PSEUDOPOP_DATA"]
+        )
+        two_photon.load_data()
+        test = 1
+
 
 
 
