@@ -4,9 +4,13 @@ import numpy.typing as npt
 
 
 class TrialMetadata:
-    def __init__(self):
-        self.metadata_df = pd.DataFrame()
+    def __init__(self, metadata_df: pd.DataFrame = None):
+        if metadata_df is None:
+            self.metadata_df = pd.DataFrame()
+        else: self.metadata_df = metadata_df
         self.trial_lens = []
+        self._masked_metadata = None
+        self._use_mask = False
 
     def process_and_append(self, raw_trials_metadata_df: pd.DataFrame):
         """
@@ -78,15 +82,15 @@ class TrialMetadata:
 
         self.metadata_df = metadata_lookup.reindex(combined_df.index).rename_axis(index='morph')
 
-    def get_morph_names(self) -> pd.Series:
+    def get_morph_names(self, as_list:bool = False) -> pd.Series|list:
         """
         Returns the morph names of the loaded metadata in pd.Series format
         """
-        return self.metadata_df['morph_name']
+        if as_list: return self.get_metadata()['morph_name'].values
+        return self.get_metadata()['morph_name']
 
     def get_pair_keys(
             self,
-            transitions: list = None,
             unique: bool = True,
             dropna: bool = True,
             as_series: bool = False
@@ -121,10 +125,14 @@ class TrialMetadata:
         return list(shared_morphs)
 
     def apply_mask(self, mask):
-        return self.metadata_df[mask]
+        self._masked_metadata = self.metadata_df[mask]
+        self._use_mask = True
+
+    def disable_mask(self):
+        self._use_mask = False
 
     def get_anchor_mask(self):
-        mask = self.metadata_df['morph_type'] == 'anchor'
+        mask = self.get_metadata()['stim_type'] == 'anchor'
         return mask
 
 
