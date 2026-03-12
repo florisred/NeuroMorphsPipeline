@@ -57,6 +57,7 @@ class Pipeline:
         analyzer = Analyzer()
         analyzer.run_pca(data_source=two_photon, pca_type='full')
         analyzer.run_pca(data_source=two_photon, pca_type='triplets')
+        analyzer.create_2d_plots(analyzer._pca_dict['TwoPhoton_triplet-bark-leaves-strawberry'])
         test=1
 
         # transitions = two_photon.find_stimulus_cycles(n=3)[0]

@@ -7,14 +7,19 @@ import re
 class PCAData:
     def __init__(self, pca_type: str, pca_output: npt.NDArray, metadata: TrialMetadata):
         self._pca_output = pca_output
-        self._metadata = metadata
+        self.metadata = metadata
         self._pca_df = pd.DataFrame(pca_output, index=metadata.get_morph_names(), columns = [f'Component{i+1}' for i in range(pca_output.shape[1])])
         self._pca_type = pca_type
+        self._pca_name = 'pca'
 
-
+    def set_name(self, name: str):
+        self._pca_name = name
+    @property
+    def name(self):
+        return self._pca_name
     @property
     def metadata_df(self) -> pd.DataFrame:
-        return self._metadata.get_metadata()
+        return self.metadata.get_metadata()
     @property
     def pca_data(self) -> pd.DataFrame:
         return self._pca_df
@@ -23,15 +28,15 @@ class PCAData:
         return self._pca_type
 
     def get_numeric_index(self):
-        return np.arange(len(self.metadata_df))
+        return np.arange(len(self.pca_data))
 
     def sort(self):
         """
         Returns a list of integer indices that sorts the input
         according to the cyclical material path.
         """
-        morph_names = self._metadata.get_morph_names(as_list=True)
-        anchor_order = sorted(self._metadata.get_anchor_names())
+        morph_names = self.metadata.get_morph_names(as_list=True)
+        anchor_order = sorted(self.metadata.get_anchor_names())
 
         path = []
         for i in range(len(anchor_order)):
@@ -67,5 +72,5 @@ class PCAData:
                             key=lambda k: name_to_pos.get(morph_names[k], 999))
 
         self._pca_df = self._pca_df.iloc[sorted_idx]
-        self._metadata.sort(sorted_idx)
+        self.metadata.sort(sorted_idx)
 

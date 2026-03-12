@@ -5,7 +5,7 @@ from utils.utils import create_name_from_list
 
 
 
-class Analyzer(PCAMixin, Plot2DMixIn, Plot3DMixIn, PlotInteractiveMixIn):
+class Analyzer(PCAMixin, Plot2DMixIn):#, Plot3DMixIn, PlotInteractiveMixIn):
     def __init__(self):
         self.n_components = 3
         self._datasource_dict ={}
@@ -44,7 +44,10 @@ class Analyzer(PCAMixin, Plot2DMixIn, Plot3DMixIn, PlotInteractiveMixIn):
                         metadata=temp_data_source.get_metadata(),
                         pca_type=pca_type
                     )
-                    self._pca_dict[f'{key}_{triplet_name}'] = pca_data.sort()
+                    pca_data.sort()
+                    pca_name = f'{key}_{triplet_name}'
+                    pca_data.set_name(pca_name)
+                    self._pca_dict[pca_name] = pca_data
 
 
 
