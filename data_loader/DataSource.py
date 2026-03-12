@@ -3,7 +3,7 @@ from pathlib import Path
 import itertools
 from data_loader.TrialMetadata import TrialMetadata
 import numpy as np
-
+import copy
 
 class DataSource(ABC):
     def __init__(
@@ -85,6 +85,8 @@ class DataSource(ABC):
         filtered_data = self.data[mask]
         return filtered_data
 
+    def copy(self):
+        return copy.deepcopy(self)
 
 
 
