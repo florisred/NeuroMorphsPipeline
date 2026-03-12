@@ -135,4 +135,28 @@ class TrialMetadata:
         mask = self.get_metadata()['stim_type'] == 'anchor'
         return mask
 
+    def get_anchors(self):
+        return self.get_metadata()[self.get_anchor_mask()]
+
+    def get_anchor_names(self):
+        return self.get_anchors()['morph_name']
+
+    def get_metadata(self):
+        if self._use_mask: return self._masked_metadata
+        else: return self.metadata_df
+
+    def sort(self, sorted_idx):
+        """
+        sorts either the masked data or real data, based on if the mask is used.
+        """
+        if self._use_mask:
+            if len(self._masked_metadata) != len(sorted_idx):
+                raise ValueError("the length of the sorted idx does not match the length of the metadata")
+            self._masked_metadata = self._masked_metadata.iloc[sorted_idx]
+        else:
+            if len(self.metadata_df) != len(sorted_idx):
+                raise ValueError("the length of the sorted idx does not match the length of the metadata")
+            self.metadata_df = self.metadata_df.iloc[sorted_idx]
+
+
 
