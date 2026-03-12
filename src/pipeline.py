@@ -9,6 +9,7 @@ import os
 import json
 from src.pca import PCAPerformer
 from data_loader.TwoPhotonDataSource import TwoPhotonDataSource
+from analysis.Analyzer import Analyzer
 from data_loader.StimulusDataSource import StimulusGaborDataSource, StimulusPixelWiseDataSource
 
 class Pipeline:
@@ -53,9 +54,14 @@ class Pipeline:
             data_location=self.settings["PSEUDOPOP_DATA"]
         )
         two_photon.load_data()
-        transitions = two_photon.find_stimulus_cycles(n=3)[0]
-        transition_data, transition_labels = two_photon.filter_transitions(transitions)
+        analyzer = Analyzer()
+        analyzer.run_pca(data_source=two_photon, pca_type='full')
+        analyzer.run_pca(data_source=two_photon, pca_type='triplets')
+        test=1
 
+        # transitions = two_photon.find_stimulus_cycles(n=3)[0]
+        # transition_data, transition_labels = two_photon.filter_transitions(transitions)
+        #
         stimulus_gabor = StimulusGaborDataSource(
             file_paths=[self.data_dir / 'stimuli'],
             gabor_params = self.settings["gabor_params"],
@@ -66,6 +72,10 @@ class Pipeline:
             file_paths=[self.data_dir / 'stimuli'],
         )
         stimulus_pixel.load_data()
+        analyzer.run_pca(data_source=stimulus_pixel, pca_type='full')
+        analyzer.run_pca(data_source=stimulus_pixel, pca_type='triplets')
+        analyzer.run_pca(data_source=stimulus_gabor, pca_type='full')
+        analyzer.run_pca(data_source=stimulus_gabor, pca_type='triplets')
         test = 1
 
 
