@@ -1,7 +1,7 @@
 from pathlib import Path
 from data_loader.TrialMetadata import TrialMetadata
 from data_loader.DataSource import DataSource
-from data_loader.MixIns.TwoPhotonMixIn import TwoPhotonMixIn
+from MixIns.TwoPhotonMixIn import TwoPhotonMixIn
 import pandas as pd
 from utils.utils import scale_session
 
