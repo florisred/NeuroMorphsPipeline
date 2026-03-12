@@ -13,6 +13,8 @@ class DataSource(ABC):
         self.file_paths = file_paths
         self.data = None
         self.metadata = TrialMetadata()
+        self._use_mask = False
+        self.mask = None
         self.data_type = 'Unknown'
 
     def get_data_type(self) -> str:
@@ -67,6 +69,9 @@ class DataSource(ABC):
 
 
     def filter_transitions(self, transitions: list[str]):
+        """
+        applies a mask to the
+        """
         mask1 = self.metadata.get_pair_keys(
             unique=False,
             dropna=False,
@@ -76,17 +81,27 @@ class DataSource(ABC):
             [texture for transition in transitions for texture in transition.split('__')])
         mask_relevant_morphs = self.metadata.get_morph_names().isin(relevant_anchors)
         final_mask = mask1 | mask_relevant_morphs
-        filtered_data = self.data[final_mask]
-        filtered_labels = self.metadata.apply_mask(final_mask)
-        return filtered_data, filtered_labels
+        self.mask = final_mask
+        self.metadata.apply_mask(final_mask)
+        self._use_mask = True
 
-    def extract_anchors(self):
+
+    def get_anchors(self):
         mask = self.metadata.get_anchor_mask()
-        filtered_data = self.data[mask]
+        filtered_data = self.get_data()[mask]
         return filtered_data
+
+    def get_data(self):
+        if self._use_mask:
+            return self.data[self.mask]
+        return self.data
+
+    def get_metadata(self):
+        return self.metadata
 
     def copy(self):
         return copy.deepcopy(self)
+
 
 
 
