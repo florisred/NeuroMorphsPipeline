@@ -5,7 +5,7 @@ from utils.utils import create_name_from_list
 
 
 
-class Analyzer(PCAMixin, Plot2DMixIn):#, Plot3DMixIn, PlotInteractiveMixIn):
+class Analyzer(PCAMixin, Plot2DMixIn, PlotInteractiveMixIn):#, Plot3DMixIn, ):
     def __init__(self):
         self.n_components = 3
         self._datasource_dict ={}
@@ -15,7 +15,7 @@ class Analyzer(PCAMixin, Plot2DMixIn):#, Plot3DMixIn, PlotInteractiveMixIn):
         key = data_source.data_type
         self._datasource_dict[key] = data_source
 
-    def run_pca(self, data_source: DataSource=None, key=None, pca_type: str = 'full'):
+    def _prepare_pca(self, data_source: DataSource=None, key=None, pca_type: str = 'full'):
         """
         runs PCA on the given data source and pca_type
         """
@@ -28,7 +28,16 @@ class Analyzer(PCAMixin, Plot2DMixIn):#, Plot3DMixIn, PlotInteractiveMixIn):
             case 'full':
                 data = data_source.get_data()
                 anchors = data_source.get_anchors()
-                self._pca_dict[f'{key}_full'] = self._run_pca(all_data = data, fit_data=anchors, n_components = self.n_components, metadata=data_source.get_metadata(), pca_type=pca_type)
+                pca_data =  self._run_pca(
+                    all_data = data,
+                    fit_data=anchors,
+                    n_components = self.n_components,
+                    metadata=data_source.get_metadata(),
+                    pca_type=pca_type
+                )
+                pca_name = f'{key}_full'
+                pca_data.set_name(pca_name)
+                self._pca_dict[pca_name] = pca_data
             case 'triplets':
                 triplets = data_source.find_stimulus_cycles(n=3)
                 for triplet in triplets:
@@ -53,5 +62,23 @@ class Analyzer(PCAMixin, Plot2DMixIn):#, Plot3DMixIn, PlotInteractiveMixIn):
 
 
 
-    def create_plots(self, plot_types: list|tuple):
-        pass
+    def create_plots(self, plot_types: list|tuple, output_dir: Path):
+        if 'interactive' in plot_types:
+            for datasource_key in self._datasource_dict.keys():
+                self._prepare_pca(key = datasource_key, pca_type = 'full')
+                full_key =f'{datasource_key}_full'
+                self._create_interactive_plot(
+                    pca_data = self._pca_dict[full_key],
+                    output_dir = output_dir
+                )
+        if 'triplets' in plot_types:
+            for datasource_key in self._datasource_dict.keys():
+                self._prepare_pca(key = datasource_key, pca_type = 'triplets')
+            triplet_keys = [key for key in self._pca_dict.keys() if 'triplet' in key]
+            for key in triplet_keys:
+                self.create_2d_plots(
+                    pca_data = self._pca_dict[key],
+                    output_dir = output_dir
+                )
+
+

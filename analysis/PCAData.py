@@ -14,6 +14,7 @@ class PCAData:
 
     def set_name(self, name: str):
         self._pca_name = name
+
     @property
     def name(self):
         return self._pca_name

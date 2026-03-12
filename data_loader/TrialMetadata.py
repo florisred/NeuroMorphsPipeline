@@ -93,7 +93,7 @@ class TrialMetadata:
             self,
             unique: bool = True,
             dropna: bool = True,
-            as_series: bool = False
+            values: bool = False
         ) -> npt.NDArray[np.str_] | pd.Series:
         """
         Returns the pair_keys of the loaded metadata
@@ -104,8 +104,8 @@ class TrialMetadata:
             pair_keys = pair_keys.dropna()
         if unique:
             pair_keys = pair_keys.unique()
-        if as_series:
-            return pd.Series(pair_keys)
+        if values:
+            return pair_keys.values
         else:
             return pair_keys
 
@@ -158,5 +158,14 @@ class TrialMetadata:
                 raise ValueError("the length of the sorted idx does not match the length of the metadata")
             self.metadata_df = self.metadata_df.iloc[sorted_idx]
 
+    def find_matching_pair_keys(self, search_term: str) -> tuple[list, int]:
+        """
+        Finds the indexes where the pair key matches the search_term
+        :param search_term: str: the pair key to look for
+        :return: tuple[list, int]: the indexes where the pair key matches the search_term, and the number of matches
+        """
+        pair_keys = self.get_pair_keys(unique=False, dropna=False, values=True)
+        matches = [i for i, pair_key in enumerate(pair_keys) if search_term in str(pair_key)]
+        return matches, len(matches)
 
 

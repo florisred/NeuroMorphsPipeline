@@ -46,6 +46,8 @@ class Pipeline:
 
         self.data_dir = Path(self.settings["DATA_FOLDER"])
         self.session_dirs = [dire for dire in self.data_dir.iterdir() if dire.name not in ["output", "stimuli"] and not dire.name.startswith(".")]
+        self.output_dir = self.data_dir / "output" / 'plots'
+        self.output_dir.mkdir(parents=True, exist_ok=True)
 
 
     def test(self):
@@ -54,15 +56,6 @@ class Pipeline:
             data_location=self.settings["PSEUDOPOP_DATA"]
         )
         two_photon.load_data()
-        analyzer = Analyzer()
-        analyzer.run_pca(data_source=two_photon, pca_type='full')
-        analyzer.run_pca(data_source=two_photon, pca_type='triplets')
-        analyzer.create_2d_plots(analyzer._pca_dict['TwoPhoton_triplet-bark-leaves-strawberry'])
-        test=1
-
-        # transitions = two_photon.find_stimulus_cycles(n=3)[0]
-        # transition_data, transition_labels = two_photon.filter_transitions(transitions)
-        #
         stimulus_gabor = StimulusGaborDataSource(
             file_paths=[self.data_dir / 'stimuli'],
             gabor_params = self.settings["gabor_params"],
@@ -73,11 +66,12 @@ class Pipeline:
             file_paths=[self.data_dir / 'stimuli'],
         )
         stimulus_pixel.load_data()
-        analyzer.run_pca(data_source=stimulus_pixel, pca_type='full')
-        analyzer.run_pca(data_source=stimulus_pixel, pca_type='triplets')
-        analyzer.run_pca(data_source=stimulus_gabor, pca_type='full')
-        analyzer.run_pca(data_source=stimulus_gabor, pca_type='triplets')
-        test = 1
+
+        analyzer = Analyzer()
+        analyzer.load_datasource(data_source=two_photon)
+        analyzer.load_datasource(data_source=stimulus_gabor)
+        analyzer.load_datasource(data_source=stimulus_pixel)
+        analyzer.create_plots(plot_types=['triplets', 'interactive'], output_dir=self.output_dir)
 
 
 

@@ -75,7 +75,6 @@ class DataSource(ABC):
         mask1 = self.metadata.get_pair_keys(
             unique=False,
             dropna=False,
-            as_series=True
         ).isin(transitions)
         relevant_anchors = np.unique(
             [texture for transition in transitions for texture in transition.split('__')])

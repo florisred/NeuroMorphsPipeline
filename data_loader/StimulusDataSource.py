@@ -23,6 +23,7 @@ class StimulusGaborDataSource(DataSource, StimulusMixin):
         )
         metadata = self._process_image_names(images_names)
         self.metadata.process_and_append(metadata)
+        self.data.index = self.metadata.get_morph_names()
 
 
 
@@ -40,3 +41,5 @@ class StimulusPixelWiseDataSource(DataSource, StimulusMixin):
         metadata = self._process_image_names(images_names)
         self.metadata.process_and_append(metadata)
         self.data = pd.DataFrame(images_flat)
+        self.data.index = self.metadata.get_morph_names()
+
