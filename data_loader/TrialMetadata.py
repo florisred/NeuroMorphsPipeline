@@ -105,7 +105,7 @@ class TrialMetadata:
         if unique:
             pair_keys = pair_keys.unique()
         if values:
-            return pair_keys.values
+            return pair_keys
         else:
             return pair_keys
 

@@ -1,13 +1,10 @@
 from pathlib import Path
 from warnings import warn
-from src.three_photon import Twophoton
 from plotcreator import PlotCreator
 from scripts.generate_config import generate_config
-from src.stimuli import Stimuli
 from src.neuropixels import NeuroPixelsData
 import os
 import json
-from src.pca import PCAPerformer
 from data_loader.TwoPhotonDataSource import TwoPhotonDataSource
 from analysis.Analyzer import Analyzer
 from data_loader.StimulusDataSource import StimulusGaborDataSource, StimulusPixelWiseDataSource
@@ -56,6 +53,7 @@ class Pipeline:
             data_location=self.settings["PSEUDOPOP_DATA"]
         )
         two_photon.load_data()
+        two_photon_triplets = two_photon.find_stimulus_cycles(n=3)
         stimulus_gabor = StimulusGaborDataSource(
             file_paths=[self.data_dir / 'stimuli'],
             gabor_params = self.settings["gabor_params"],
@@ -71,55 +69,5 @@ class Pipeline:
         analyzer.load_datasource(data_source=two_photon)
         analyzer.load_datasource(data_source=stimulus_gabor)
         analyzer.load_datasource(data_source=stimulus_pixel)
-        analyzer.create_plots(plot_types=['triplets', 'interactive'], output_dir=self.output_dir)
+        analyzer.create_plots(plot_types=['distances'], output_dir=self.output_dir, triplets=two_photon_triplets) # 'triplets', 'interactive',
 
-
-
-
-    def process_stimuli(self):
-        stimuli = Stimuli(
-            data_dir = self.settings["DATA_FOLDER"]
-        )
-        self.data_dict.update(stimuli.process_images(
-            gabor_params = self.settings["gabor_params"]
-        ))
-
-    def run_pca(self):
-        pca_performer = PCAPerformer(data_dict=self.data_dict)
-        self.pca_dict = pca_performer.run_pca_analysis()
-        test = 1
-
-
-
-    def create_plots(self):
-        output_folder = Path(self.settings["DATA_FOLDER"]) / 'output' / 'plots'
-        os.makedirs(output_folder, exist_ok=True)
-        if len(self.pca_dict.keys()) > 0:
-            for key, pca in self.pca_dict.items():
-                print(f"Creating plot for {key}...")
-                plotcreator = PlotCreator(plot_settings = {
-                    "plot_name" : f'{key}',
-                    'do_2d_plots': True,
-                    'do_3d_plots': True,
-                    'do_interactive_plots': True,
-                    'do_distances': True,
-                    'data_dir': output_folder,
-                })
-                plotcreator.create_plots(pca[0], pca[2], key)
-
-
-
-
-    def load_neuropixels_data(self):
-        neuropixels_data = NeuroPixelsData()
-        neuropixels_data.load_data(data_dir=self.settings["DATA_FOLDER"])
-        _, self.pca_dict["neuropixels"], self.neuropixels_labels = neuropixels_data.process_neuropixels_data()
-
-
-    def process_two_photon(self):
-        two_photon = Twophoton()
-        self.data_dict['two_photon'] = two_photon.load_2p_data(
-            session_dirs=self.session_dirs,
-            data_location=self.settings["PSEUDOPOP_DATA"]
-        )
-        test=1
