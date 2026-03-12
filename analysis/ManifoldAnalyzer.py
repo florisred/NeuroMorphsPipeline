@@ -7,5 +7,6 @@ class ManifoldAnalyzer:
         self.pca_dict ={}
 
     def run_pca(self, data_source: DataSource, transitions: list|None = None):
+        pass
 
 
