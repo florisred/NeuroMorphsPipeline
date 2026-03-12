@@ -6,6 +6,8 @@ from datetime import datetime
 if __name__ == "__main__":
 
     nm = Pipeline()
+    nm.test()
+
 
     nm.process_two_photon()
     nm.process_stimuli()
