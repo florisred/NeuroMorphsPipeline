@@ -9,11 +9,6 @@ from data_objects.StimulusDataSource import StimulusGaborDataSource, StimulusPix
 class Pipeline:
 
     def __init__(self):
-        # initiate stimuli object for storing the stimuli
-
-
-        self.pca_dict = {}
-        self.data_dict = {}
 
         # set preliminary vars
         project_root = Path(__file__).parent.parent
@@ -44,7 +39,7 @@ class Pipeline:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
 
-    def test(self):
+    def do_everything(self):
         two_photon = TwoPhotonDataSource(
             file_paths=self.session_dirs,
             data_location=self.settings["PSEUDOPOP_DATA"]
