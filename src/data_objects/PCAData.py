@@ -1,4 +1,4 @@
-from data_loader.TrialMetadata import TrialMetadata
+from data_objects.TrialMetadata import TrialMetadata
 import numpy.typing as npt
 import pandas as pd
 import numpy as np

@@ -1,4 +1,4 @@
-from data_loader.DataSource import DataSource
+from data_objects.DataSource import DataSource
 from MixIns.StimulusMixin import StimulusMixin
 from pathlib import Path
 import pandas as pd

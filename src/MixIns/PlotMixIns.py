@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 
-from analysis.PCAData import PCAData
+from data_objects.PCAData import PCAData
 
 
 class Plot2DMixIn:
@@ -40,7 +40,7 @@ class Plot2DMixIn:
 class PlotInteractiveMixIn:
 
     @staticmethod
-    def _create_interactive_plot(pca_data: PCAData, output_dir: Path):
+    def create_interactive_plot(pca_data: PCAData, output_dir: Path):
         data = pca_data.pca_data
         metadata = pca_data.metadata
         for search_term in metadata.get_pair_keys():

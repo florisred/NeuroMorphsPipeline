@@ -1,19 +1,52 @@
-from MixIns.PCAMixin import PCAMixin
-from MixIns.PlotMixIns import *
-from data_loader.DataSource import DataSource
+from analysis.PCAPerformer import PCAPerformer
+from analysis.plot_creator import PlotCreator
+from data_objects.DataSource import DataSource
 from utils.utils import create_name_from_list
+from pathlib import Path
 
 
 
-class Analyzer(PCAMixin, Plot2DMixIn, PlotInteractiveMixIn, PlotDistancesMixIn):#, Plot3DMixIn, ):
+class Analyzer:
     def __init__(self):
         self.n_components = 3
         self._datasource_dict ={}
         self._pca_dict = {}
+        self.plot_object = PlotCreator()
+        self.pca_performer = PCAPerformer()
 
     def load_datasource(self, data_source: DataSource):
         key = data_source.data_type
         self._datasource_dict[key] = data_source
+
+    def create_plots(self, plot_types: list|tuple, output_dir: Path, triplets: list = None):
+        if 'interactive' in plot_types:
+            for datasource_key in self._datasource_dict.keys():
+                full_key = f'{datasource_key}_full'
+                if full_key not in self._pca_dict.keys():
+                    self._prepare_pca(key = datasource_key, pca_type = 'full')
+                self.plot_object.create_interactive_plot(
+                    pca_data = self._pca_dict[full_key],
+                    output_dir = output_dir
+                )
+        if 'triplets' in plot_types:
+            for datasource_key in self._datasource_dict.keys():
+                self._prepare_pca(key = datasource_key, pca_type = 'triplets', triplets=triplets)
+            triplet_keys = [key for key in self._pca_dict.keys() if 'triplet' in key]
+            for key in triplet_keys:
+                self.plot_object.create_2d_plots(
+                    pca_data = self._pca_dict[key],
+                    output_dir = output_dir
+                )
+        if 'distances' in plot_types:
+            for datasource_key in self._datasource_dict.keys():
+                full_key = f'{datasource_key}_full'
+                if full_key not in self._pca_dict.keys():
+                    self._prepare_pca(key=datasource_key, pca_type='full')
+                self.plot_object.calculate_distances(
+                    pca_data=self._pca_dict[full_key],
+                    output_dir = output_dir
+                )
+
 
     def _prepare_pca(self, data_source: DataSource=None, key=None, pca_type: str = 'full', triplets = None):
         """
@@ -28,7 +61,7 @@ class Analyzer(PCAMixin, Plot2DMixIn, PlotInteractiveMixIn, PlotDistancesMixIn):
             case 'full':
                 data = data_source.get_data()
                 anchors = data_source.get_anchors()
-                pca_data =  self._run_pca(
+                pca_data =  self.pca_performer.run_pca(
                     all_data = data,
                     fit_data=anchors,
                     n_components = self.n_components,
@@ -47,7 +80,7 @@ class Analyzer(PCAMixin, Plot2DMixIn, PlotInteractiveMixIn, PlotDistancesMixIn):
                     temp_data_source.filter_transitions(triplet)
                     data = temp_data_source.get_data()
                     anchors = temp_data_source.get_anchors()
-                    pca_data = self._run_pca(
+                    pca_data = self.pca_performer.run_pca(
                         all_data = data,
                         n_components = self.n_components,
                         fit_data = anchors,
@@ -58,39 +91,5 @@ class Analyzer(PCAMixin, Plot2DMixIn, PlotInteractiveMixIn, PlotDistancesMixIn):
                     pca_name = f'{key}_{triplet_name}'
                     pca_data.set_name(pca_name)
                     self._pca_dict[pca_name] = pca_data
-
-
-
-
-
-    def create_plots(self, plot_types: list|tuple, output_dir: Path, triplets: list = None):
-        if 'interactive' in plot_types:
-            for datasource_key in self._datasource_dict.keys():
-                full_key = f'{datasource_key}_full'
-                if full_key not in self._pca_dict.keys():
-                    self._prepare_pca(key = datasource_key, pca_type = 'full')
-                self._create_interactive_plot(
-                    pca_data = self._pca_dict[full_key],
-                    output_dir = output_dir
-                )
-        if 'triplets' in plot_types:
-            for datasource_key in self._datasource_dict.keys():
-                self._prepare_pca(key = datasource_key, pca_type = 'triplets', triplets=triplets)
-            triplet_keys = [key for key in self._pca_dict.keys() if 'triplet' in key]
-            for key in triplet_keys:
-                self.create_2d_plots(
-                    pca_data = self._pca_dict[key],
-                    output_dir = output_dir
-                )
-        if 'distances' in plot_types:
-            for datasource_key in self._datasource_dict.keys():
-                full_key = f'{datasource_key}_full'
-                if full_key not in self._pca_dict.keys():
-                    self._prepare_pca(key=datasource_key, pca_type='full')
-                self.calculate_distances(
-                    pca_data=self._pca_dict[full_key],
-                    output_dir = output_dir
-                )
-
 
 

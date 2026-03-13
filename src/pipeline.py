@@ -1,13 +1,10 @@
 from pathlib import Path
 from warnings import warn
-from plotcreator import PlotCreator
 from scripts.generate_config import generate_config
-from src.neuropixels import NeuroPixelsData
-import os
 import json
-from data_loader.TwoPhotonDataSource import TwoPhotonDataSource
+from data_objects.TwoPhotonDataSource import TwoPhotonDataSource
 from analysis.Analyzer import Analyzer
-from data_loader.StimulusDataSource import StimulusGaborDataSource, StimulusPixelWiseDataSource
+from data_objects.StimulusDataSource import StimulusGaborDataSource, StimulusPixelWiseDataSource
 
 class Pipeline:
 
