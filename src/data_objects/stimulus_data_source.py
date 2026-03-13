@@ -1,5 +1,5 @@
-from data_objects.DataSource import DataSource
-from MixIns.StimulusMixin import StimulusMixin
+from data_objects.data_source import DataSource
+from MixIns.stimulus_mixin import StimulusMixin
 from pathlib import Path
 import pandas as pd
 

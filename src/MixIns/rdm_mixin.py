@@ -16,8 +16,8 @@ class RDMMixIn:
             n_components: int = 2,
             dist_metric: str = 'euclidean'
     ):
-        output_dir.mkdir(parents=True, exist_ok=True)
         output_dir = output_dir / 'rdm'
+        output_dir.mkdir(parents=True, exist_ok=True)
         rdms = {}
         names = [d.name for d in pca_data_list]
         morph_names = pca_data_list[0].metadata.get_morph_names()

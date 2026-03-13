@@ -4,12 +4,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 
-from data_objects.PCAData import PCAData
+from data_objects.pca_data import PCAData
 
 
 class Plot2DMixIn:
     @staticmethod
     def create_2d_plots(pca_data: PCAData, output_dir: Path):
+        output_dir = output_dir / '2D'
+        output_dir.mkdir(parents=True, exist_ok=True)
         data = pca_data.pca_data
         metadata = pca_data.metadata
         numeric_index = pca_data.get_numeric_index()
@@ -41,6 +43,8 @@ class PlotInteractiveMixIn:
 
     @staticmethod
     def create_interactive_plot(pca_data: PCAData, output_dir: Path):
+        output_dir = output_dir / 'interactive'
+        output_dir.mkdir(parents=True, exist_ok=True)
         data = pca_data.pca_data
         metadata = pca_data.metadata
         for search_term in metadata.get_pair_keys():
@@ -117,6 +121,8 @@ class PlotInteractiveMixIn:
 class PlotDistancesMixIn:
     @staticmethod
     def calculate_distances(pca_data: PCAData, output_dir: Path):
+        output_dir = output_dir / 'distances'
+        output_dir.mkdir(parents=True, exist_ok=True)
         data = pca_data.pca_data
         metadata = pca_data.metadata
         name_stems = metadata.get_pair_keys(unique=True, values=True, dropna=True)

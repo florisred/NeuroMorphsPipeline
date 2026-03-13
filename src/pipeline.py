@@ -2,9 +2,9 @@ from pathlib import Path
 from warnings import warn
 from scripts.generate_config import generate_config
 import json
-from data_objects.TwoPhotonDataSource import TwoPhotonDataSource
-from analysis.Analyzer import Analyzer
-from data_objects.StimulusDataSource import StimulusGaborDataSource, StimulusPixelWiseDataSource
+from data_objects.two_photon_data_source import TwoPhotonDataSource
+from analysis.analyzer import Analyzer
+from data_objects.stimulus_data_source import StimulusGaborDataSource, StimulusPixelWiseDataSource
 
 class Pipeline:
 
@@ -61,5 +61,5 @@ class Pipeline:
         analyzer.load_datasource(data_source=two_photon)
         analyzer.load_datasource(data_source=stimulus_gabor)
         analyzer.load_datasource(data_source=stimulus_pixel)
-        analyzer.create_plots(plot_types=['distances'], output_dir=self.output_dir, triplets=two_photon_triplets) # 'triplets', 'interactive',
+        analyzer.create_plots(plot_types=['rdm', 'interactive', 'triplets', 'distances'], output_dir=self.output_dir, triplets=two_photon_triplets) # 'triplets', 'interactive',
 

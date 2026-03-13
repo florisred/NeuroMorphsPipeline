@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 import itertools
-from data_objects.TrialMetadata import TrialMetadata
+from data_objects.trial_metadata import TrialMetadata
 import numpy as np
 import copy
 

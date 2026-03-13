@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.decomposition import PCA
-from data_objects.TrialMetadata import TrialMetadata
-from data_objects.PCAData import PCAData
+from data_objects.trial_metadata import TrialMetadata
+from data_objects.pca_data import PCAData
 
 
 class PCAPerformer:
