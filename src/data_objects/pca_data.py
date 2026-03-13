@@ -28,6 +28,9 @@ class PCAData:
     def pca_type(self) -> str:
         return self._pca_type
 
+    def get_data_components(self, n_components: int):
+        return self._pca_df.iloc[:, :n_components]
+
     def get_numeric_index(self):
         return np.arange(len(self.pca_data))
 
