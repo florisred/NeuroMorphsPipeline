@@ -5,47 +5,72 @@ from pathlib import Path
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import spearmanr
 import pandas as pd
+from collections import defaultdict
+
+from data_objects.pca_data import PCAData
 
 
 class RDMMixIn:
     @classmethod
     def rdm_analysis(
             cls,
-            pca_data_list: list,
+            pca_data_dict: dict[str,PCAData],
             output_dir: Path,
             n_components: int = 2,
-            dist_metric: str = 'euclidean'
+            dist_metric: str = 'euclidean',
+            avg_only: bool = False,
     ):
-        output_dir = output_dir / 'rdm'
-        output_dir.mkdir(parents=True, exist_ok=True)
-        rdms = {}
-        names = [d.name for d in pca_data_list]
-        morph_names = pca_data_list[0].metadata.get_morph_names()
+        subset_groups = {}
+        all_rdms = defaultdict(list)
+        stb_mtcs = []
+        for t_key in pca_data_dict.keys():
+            if 'subset' not in t_key: continue
+            ds_key = t_key.split('_')[0]
+            subset_name = t_key[len(ds_key) + 1:]
 
-        # 1. Calculate RDMs
-        for pca_data in pca_data_list:
-            data = pca_data.get_data_components(n_components=n_components)
-            rdms[pca_data.name] = pdist(data.values, metric=dist_metric)
+            if subset_name not in subset_groups:
+                subset_groups[subset_name] = []
+            subset_groups[subset_name].append(pca_data_dict[t_key])
+        for subset_name, pca_data_list in subset_groups.items():
+            if len(pca_data_list) > 0:
+                output_dir = output_dir / 'rdm'
+                output_dir.mkdir(parents=True, exist_ok=True)
+                rdms = {}
+                names = [d.name for d in pca_data_list]
+                morph_names = pca_data_list[0].metadata.get_morph_names()
 
-        # 2. Representational Stability Matrix
-        stability_matrix = np.zeros((len(names), len(names)))
-        for i, n1 in enumerate(names):
-            for j, n2 in enumerate(names):
-                stability_matrix[i, j], _ = spearmanr(rdms[n1], rdms[n2])
+                # 1. Calculate RDMs
+                for pca_data in pca_data_list:
+                    data = pca_data.get_data_components(n_components=n_components)
+                    distance_vector = pdist(data.values, metric=dist_metric)
+                    rdms[pca_data.name] = distance_vector
+                    all_rdms[pca_data.data_source].append(distance_vector)
 
-        cls._plot_stability(stability_matrix, names, output_dir)
+                # 2. Representational Stability Matrix
+                stability_matrix = np.zeros((len(names), len(names)))
+                for i, n1 in enumerate(names):
+                    for j, n2 in enumerate(names):
+                        stability_matrix[i, j], _ = spearmanr(rdms[n1], rdms[n2])
+                stb_mtcs.append(stability_matrix)
 
-        # 3. Individual RDMs
-        for name, dist_vec in rdms.items():
-            cls._plot_rdm(squareform(dist_vec), morph_names, name, output_dir)
+                if not avg_only:
+                    cls._plot_stability(stability_matrix, names, output_dir, name = 'what')
+                    for name, dist_vec in rdms.items():
 
-        # 4. Average RDM
-        #avg_rdm = cls.avg_rdm(rdms=rdms)
-        #cls._plot_rdm(squareform(avg_rdm), morph_names, "avg_pair_key", output_dir)
+                        cls._plot_rdm(squareform(dist_vec), morph_names, name, output_dir)
+
+        if avg_only:
+            for key, value in all_rdms.items():
+                avg_rdm = np.mean(value, axis=0)
+                sqr = squareform(avg_rdm)
+                nms = np.arange(sqr.shape[0])
+                cls._plot_rdm(sqr, nms, f"avg_{key}", output_dir)
+            avg_stb_mx = np.mean(stb_mtcs, axis=0)
+            cls._plot_stability(avg_stb_mx, all_rdms.keys(), output_dir, name='stability_avg')
 
 
     @staticmethod
-    def _plot_stability(matrix, labels, output_dir):
+    def _plot_stability(matrix, labels, output_dir, name):
         # We increase width to accommodate long session names
         plt.figure(figsize=(12, 10))
 
@@ -55,11 +80,11 @@ class RDMMixIn:
 
         plt.xticks(rotation=45, ha='right')
         plt.yticks(rotation=0)
-        plt.title("Representational Stability (Spearman ρ)", pad=20, fontsize=15)
+        plt.title(f"Representational Stability {name})", pad=20, fontsize=15)
 
         # tight_layout fixes the "cutoff" text on the left/bottom
         plt.tight_layout()
-        plt.savefig(output_dir / "stability_matrix.png")
+        plt.savefig(output_dir / f"{name}.png")
         plt.show()  # Forces the plot to show in the console/notebook
 
     @staticmethod
@@ -83,6 +108,3 @@ class RDMMixIn:
         plt.savefig(output_dir / f"rdm_{name}.png", bbox_inches='tight')
         plt.show()  # Forces the plot to show in the loop
 
-
-    def avg_rdm(self, rdms: dict):
-        return np.mean(rdms.values())

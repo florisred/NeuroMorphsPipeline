@@ -1,5 +1,5 @@
 import json
-
+from pathlib import Path
 def generate_config(
         config_dir,
         settings_file
@@ -23,6 +23,18 @@ def generate_config(
         }
 
     }
+    while True:
+        data_folder = input("Please enter the data folder: ")
+        try:
+            data_folder_test = Path(data_folder)
+            break
+        except Exception as e:
+            print(e)
+            print('try again, could not find that path')
+
+    settings_dict["DATA_FOLDER"] = data_folder
+
+
     with open(settings_file, 'w') as outfile:
         outfile.write(json.dumps(settings_dict, indent=4))
 

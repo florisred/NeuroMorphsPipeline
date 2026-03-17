@@ -16,6 +16,12 @@ class PCAData:
         self._pca_name = name
 
     @property
+    def data_source(self):
+        try: return self.name.split('_')[0]
+        except: return 'unknown'
+
+
+    @property
     def name(self):
         return self._pca_name
     @property

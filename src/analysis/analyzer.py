@@ -27,7 +27,7 @@ class Analyzer:
             logger.warning(f"Overwriting existing datasource with key: {key}")
         self._datasource_dict[key] = data_source
 
-    def create_plots(self, plot_types: Union[List[str], Tuple[str]], output_dir: Path, subsets: Optional[List] = None, n_components: Optional[int] = None):
+    def create_plots(self, plot_types: Union[List[str], Tuple[str]], output_dir: Path, subsets: Optional[List] = None, n_components: Optional[int] = None, avg_only: Optional[bool] = False):
         """Coordinates the creation of requested plots."""
         output_dir.mkdir(parents=True, exist_ok=True)
         needs_full_pca = any(p in plot_types for p in ['interactive', 'distances'])
@@ -57,31 +57,20 @@ class Analyzer:
                     pca_data=self._pca_dict[full_key],
                     output_dir=output_dir
                 )
-        subset_keys = [k for k in self._pca_dict.keys() if '_full' not in k and '_pairwise' not in k]
-
         if 'subsets' in plot_types:
-            for t_key in subset_keys:
-                self.plot_object.create_2d_plots(
-                    pca_data=self._pca_dict[t_key],
-                    output_dir=output_dir
-                )
+            self.plot_object.create_2d_plots(
+                pca_data_dict=self._pca_dict,
+                output_dir=output_dir
+            )
 
         # 4. RDM Analysis
         if 'rdm' in plot_types:
-            subset_groups = {}
-            for t_key in subset_keys:
-                ds_key = t_key.split('_')[0]
-                subset_name = t_key[len(ds_key) + 1:]
-
-                if subset_name not in subset_groups:
-                    subset_groups[subset_name] = []
-                subset_groups[subset_name].append(self._pca_dict[t_key])
-            for subset_name, pca_data_list in subset_groups.items():
-                if len(pca_data_list) > 0:
-                    self.plot_object.rdm_analysis(
-                        pca_data_list=pca_data_list,
-                        output_dir=output_dir
-                    )
+            self.plot_object.rdm_analysis(
+                pca_data_dict=self._pca_dict,
+                output_dir=output_dir,
+                avg_only=avg_only,
+                n_components=n_components
+            )
     
     def _ensure_pca(self, key: str, pca_type: str, subsets: Optional[List] = None, n_components: Optional[int] = None):
         """Wrapper to check cache before running the heavy PCA computation."""
