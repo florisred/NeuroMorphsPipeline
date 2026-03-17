@@ -11,6 +11,8 @@ class Pipeline:
     def __init__(self):
 
         # set preliminary vars
+        self.two_photon_pairs = None
+        self.two_photon_triplets = None
         project_root = Path(__file__).parent.parent
         config_dir = project_root / "config"
         settings_file = config_dir / "settings.json"
@@ -37,15 +39,24 @@ class Pipeline:
         self.session_dirs = [dire for dire in self.data_dir.iterdir() if dire.name not in ["output", "stimuli"] and not dire.name.startswith(".")]
         self.output_dir = self.data_dir / "output" / 'plots'
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.analyzer = Analyzer()
 
 
-    def do_everything(self):
+
+    def load_two_photon(self):
         two_photon = TwoPhotonDataSource(
             file_paths=self.session_dirs,
             data_location=self.settings["PSEUDOPOP_DATA"]
         )
         two_photon.load_data()
-        two_photon_triplets = two_photon.find_stimulus_cycles(n=3)
+        self.two_photon_triplets = two_photon.find_stimulus_cycles(n=3)
+        two_photon_pairs = two_photon.metadata.get_pair_keys(unique=True, dropna=True)
+        self.two_photon_pairs = [[pair] for pair in two_photon_pairs]
+
+        self.analyzer.load_datasource(data_source=two_photon)
+
+    def load_stimuli(self):
+
         stimulus_gabor = StimulusGaborDataSource(
             file_paths=[self.data_dir / 'stimuli'],
             gabor_params = self.settings["gabor_params"],
@@ -57,9 +68,13 @@ class Pipeline:
         )
         stimulus_pixel.load_data()
 
-        analyzer = Analyzer()
-        analyzer.load_datasource(data_source=two_photon)
-        analyzer.load_datasource(data_source=stimulus_gabor)
-        analyzer.load_datasource(data_source=stimulus_pixel)
-        analyzer.create_plots(plot_types=['rdm', 'interactive', 'triplets', 'distances'], output_dir=self.output_dir, triplets=two_photon_triplets) # 'triplets', 'interactive',
+        self.analyzer.load_datasource(data_source=stimulus_pixel)
+        self.analyzer.load_datasource(data_source=stimulus_gabor)
+
+    def create_plots(self):
+        #self.analyzer.create_plots(['full', 'interactive'], output_dir=self.output_dir)
+        #self.analyzer.create_plots(
+        #    plot_types=['subsets','rdm'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=6
+        #)
+        self.analyzer.create_plots(plot_types=['subset', 'rdm'], output_dir=self.output_dir, subsets=self.two_photon_triplets, n_components=6) # 'triplets', 'interactive', 'interactive', 'triplets', 'distances'
 
