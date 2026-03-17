@@ -13,12 +13,12 @@ def calc_mean_per_stimulus(data_df, labels):
     grouped_data.index = grouped_data_labels['morph_name']
     return grouped_data, grouped_data_labels
 
-def create_name_from_list(transition_list: list, first_part: str ='triplet'):
+def create_name_from_list(transition_list: list, first_part: str ='subset'):
     all_anchs = []
     for trans in transition_list:
         all_anchs.append(trans.split('__'))
     unique_anchs = np.unique(all_anchs)
-    triplet_name = first_part
+    final_name = first_part
     for anchor in unique_anchs:
-        triplet_name += f'-{anchor}'
-    return triplet_name
+        final_name += f'-{anchor}'
+    return final_name

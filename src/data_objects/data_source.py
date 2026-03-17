@@ -35,8 +35,6 @@ class DataSource(ABC):
         :param n: The number of nodes in the cycle (3 for triangles, 4 for rings).
         :return: A list of lists, where each inner list contains the edge keys forming the cycle.
         """
-        # 1. Standardize edges into a set of frozensets for O(1) lookup
-        # This replaces the slow 'if edge in transitions' check
         edges_set = set()
 
         for t in self.metadata.get_pair_keys():

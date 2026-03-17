@@ -39,6 +39,11 @@ class RDMMixIn:
         for name, dist_vec in rdms.items():
             cls._plot_rdm(squareform(dist_vec), morph_names, name, output_dir)
 
+        # 4. Average RDM
+        #avg_rdm = cls.avg_rdm(rdms=rdms)
+        #cls._plot_rdm(squareform(avg_rdm), morph_names, "avg_pair_key", output_dir)
+
+
     @staticmethod
     def _plot_stability(matrix, labels, output_dir):
         # We increase width to accommodate long session names
@@ -77,3 +82,7 @@ class RDMMixIn:
         plt.tight_layout()
         plt.savefig(output_dir / f"rdm_{name}.png", bbox_inches='tight')
         plt.show()  # Forces the plot to show in the loop
+
+
+    def avg_rdm(self, rdms: dict):
+        return np.mean(rdms.values())

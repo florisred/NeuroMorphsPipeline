@@ -3,4 +3,6 @@ from src.pipeline import Pipeline
 if __name__ == "__main__":
 
     nm = Pipeline()
-    nm.do_everything()
+    nm.load_two_photon()
+    nm.load_stimuli()
+    nm.create_plots()
