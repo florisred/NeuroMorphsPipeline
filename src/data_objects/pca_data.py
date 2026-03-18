@@ -84,57 +84,45 @@ class PCAData:
         self._pca_df = self._pca_df.iloc[sorted_idx]
         self.metadata.sort(sorted_idx)
 
-
-    def sort(self):
-        """
-        Sorts indices based on a linear path through anchors.
-        Works for 1 transition (A -> B) or many (A -> B -> C...).
-        """
+    def sort(self, custom_order=None):
         morph_names = self.metadata.get_morph_names(as_list=True)
-        # Get anchors in alphabetical or predefined order
-        anchor_order = sorted(self.metadata.get_anchor_names())
+        # 1. Use custom order or fallback to alphabetical
+        anchors = custom_order or sorted(self.metadata.get_anchor_names())
 
-        if len(anchor_order) < 2:
-            # Not enough anchors to form even one transition
-            return
+        if len(anchors) < 2: return
 
         sorted_names = []
+        visited_morphs = set()
 
-        # Iterate through each pair (leg) in the chain
-        for i in range(len(anchor_order) - 1):
-            start = anchor_order[i]
-            end = anchor_order[i + 1]
+        # Create a path (e.g., A->B, B->C, C->A)
+        path = [(anchors[i], anchors[(i + 1) % len(anchors)]) for i in range(len(anchors))]
 
-            # 1. Add the current start anchor
-            if start in morph_names:
+        for start, end in path:
+            # Add the anchor (if not already added by a previous leg)
+            if start in morph_names and start not in sorted_names:
                 sorted_names.append(start)
 
-            # 2. Find and sort the morphs belonging to this specific transition
             leg = []
             for m in morph_names:
-                # Only pick morphs that sit between these two specific anchors
-                if start in m and end in m:
-                    # Extracts the weight (e.g., "0.5" from "AnchorA_0.5")
+                if m not in visited_morphs and start in m and end in m:
+                    # Extract weight of the 'start' anchor
                     match = re.search(rf"{re.escape(start)}_([\d.]+)", m)
                     if match:
-                        weight = float(match.group(1))
-                        leg.append((m, weight))
+                        leg.append((m, float(match.group(1))))
 
-            # Sort leg by weight descending (closer to 'start' comes first)
+            # Sort by weight of 'start' anchor (descending: 0.9 -> 0.1)
             leg.sort(key=lambda x: x[1], reverse=True)
-            sorted_names.extend([m[0] for m in leg])
 
-        # 3. The Final Cap: Add the very last anchor in the chain
-        last_anchor = anchor_order[-1]
-        if last_anchor in morph_names:
-            sorted_names.append(last_anchor)
+            for m, _ in leg:
+                sorted_names.append(m)
+                visited_morphs.add(m)
 
-        # --- INTEGRATION ---
-        # Map name to its new index position
+        # Final check for any orphaned morphs (e.g. 3-way morphs)
+        remaining = [m for m in morph_names if m not in sorted_names]
+        sorted_names.extend(remaining)
+
+        # Apply indices...
         name_to_pos = {name: i for i, name in enumerate(sorted_names)}
-
-        # Apply the sort to the actual indices
-        # Fallback to 999 for any names not found in the path
         sorted_idx = sorted(range(len(morph_names)),
                             key=lambda k: name_to_pos.get(morph_names[k], 999))
 
