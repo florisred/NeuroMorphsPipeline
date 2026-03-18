@@ -10,10 +10,10 @@ from data_objects.pca_data import PCAData
 class Plot2DMixIn:
     @staticmethod
     def create_2d_plots(pca_data_dict: dict[str, PCAData], output_dir: Path):
+        output_dir = output_dir / '2D'
         for key in pca_data_dict.keys():
             if 'subset' not in key: continue
             pca_data = pca_data_dict[key]
-            output_dir = output_dir / '2D'
             output_dir.mkdir(parents=True, exist_ok=True)
             data = pca_data.pca_data
             metadata = pca_data.metadata

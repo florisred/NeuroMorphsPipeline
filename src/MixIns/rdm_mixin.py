@@ -11,15 +11,18 @@ from data_objects.pca_data import PCAData
 
 
 class RDMMixIn:
-    @classmethod
+
+
+
     def rdm_analysis(
-            cls,
+            self,
             pca_data_dict: dict[str,PCAData],
             output_dir: Path,
             n_components: int = 2,
             dist_metric: str = 'euclidean',
             avg_only: bool = False,
     ):
+        rdm_output_dir = output_dir / 'rdm'
         subset_groups = {}
         all_rdms = defaultdict(list)
         stb_mtcs = []
@@ -33,8 +36,7 @@ class RDMMixIn:
             subset_groups[subset_name].append(pca_data_dict[t_key])
         for subset_name, pca_data_list in subset_groups.items():
             if len(pca_data_list) > 0:
-                output_dir = output_dir / 'rdm'
-                output_dir.mkdir(parents=True, exist_ok=True)
+                rdm_output_dir.mkdir(parents=True, exist_ok=True)
                 rdms = {}
                 names = [d.name for d in pca_data_list]
                 morph_names = pca_data_list[0].metadata.get_morph_names()
@@ -54,19 +56,19 @@ class RDMMixIn:
                 stb_mtcs.append(stability_matrix)
 
                 if not avg_only:
-                    cls._plot_stability(stability_matrix, names, output_dir, name = 'what')
+                    self._plot_stability(stability_matrix, names, rdm_output_dir, name = 'what')
                     for name, dist_vec in rdms.items():
 
-                        cls._plot_rdm(squareform(dist_vec), morph_names, name, output_dir)
+                        self._plot_rdm(squareform(dist_vec), morph_names, name, rdm_output_dir)
 
-        if avg_only:
-            for key, value in all_rdms.items():
-                avg_rdm = np.mean(value, axis=0)
-                sqr = squareform(avg_rdm)
-                nms = np.arange(sqr.shape[0])
-                cls._plot_rdm(sqr, nms, f"avg_{key}", output_dir)
-            avg_stb_mx = np.mean(stb_mtcs, axis=0)
-            cls._plot_stability(avg_stb_mx, all_rdms.keys(), output_dir, name='stability_avg')
+
+        for key, value in all_rdms.items():
+            avg_rdm = np.mean(value, axis=0)
+            sqr = squareform(avg_rdm)
+            nms = np.arange(sqr.shape[0])
+            self._plot_rdm(sqr, nms, f"avg_{key}", rdm_output_dir)
+        avg_stb_mx = np.mean(stb_mtcs, axis=0)
+        self._plot_stability(avg_stb_mx, all_rdms.keys(), rdm_output_dir, name='stability_avg')
 
 
     @staticmethod
