@@ -5,7 +5,12 @@ import numpy as np
 
 def scale_session(X):
     scaler = StandardScaler()
-    return pd.DataFrame(scaler.fit_transform(X), index=X.index, columns=X.columns)
+    if type(X) == pd.DataFrame:
+        return pd.DataFrame(scaler.fit_transform(X), index=X.index, columns=X.columns)
+    elif type(X) == np.ndarray:
+        return scaler.fit_transform(X)
+    else:
+        raise TypeError("Please provide a pandas DataFrame or numpy array")
 
 def calc_mean_per_stimulus(data_df, labels):
     grouped_data = data_df.T.groupby(labels["morph_name"].values).mean()
