@@ -27,12 +27,14 @@ class Analyzer:
             logger.warning(f"Overwriting existing datasource with key: {key}")
         self._datasource_dict[key] = data_source
 
-    def create_plots(self, plot_types: Union[List[str], Tuple[str]], output_dir: Path, subsets: Optional[List] = None, n_components: Optional[int] = None, avg_only: Optional[bool] = False):
+    def create_plots(self, plot_types: Union[List[str], Tuple[str]], output_dir: Path, subsets: Optional[List] = None, n_components: Optional[int] = None, avg_only: Optional[bool] = False, remove_prev: bool = True):
         """Coordinates the creation of requested plots."""
         output_dir.mkdir(parents=True, exist_ok=True)
         needs_full_pca = any(p in plot_types for p in ['interactive', 'distances'])
         needs_subset_pca = any(p in plot_types for p in ['subsets', 'rdm'])
-        
+        if remove_prev:
+            self._pca_dict.clear()
+
         if n_components is None:
             n_components = self.n_components
 
@@ -69,9 +71,9 @@ class Analyzer:
                 pca_data_dict=self._pca_dict,
                 output_dir=output_dir,
                 avg_only=avg_only,
-                n_components=n_components
+                n_components=n_components,
             )
-    
+
     def _ensure_pca(self, key: str, pca_type: str, subsets: Optional[List] = None, n_components: Optional[int] = None):
         """Wrapper to check cache before running the heavy PCA computation."""
         if pca_type == 'full':
@@ -104,7 +106,9 @@ class Analyzer:
         elif pca_type == 'subsets':
             if subsets is None:
                 subsets = data_source.find_stimulus_cycles(n=3)
-
+            keys_to_drop = [key for key in self._pca_dict.keys() if 'subset' in key]
+            for drop_key in keys_to_drop:
+                self._pca_dict.pop(drop_key)
             for subset in subsets:
                 subset_name = create_name_from_list(subset)
                 pca_name = f'{key}_{subset_name}'
