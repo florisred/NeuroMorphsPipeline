@@ -74,7 +74,7 @@ class Pipeline:
     def create_plots(self):
         self.analyzer.create_plots([ 'interactive', 'distances'], output_dir=self.output_dir)
         self.analyzer.create_plots(
-            plot_types=['subsets','rdm'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=6, avg_only = True
+            plot_types=['rdm'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=4, avg_only = True
         )
-        self.analyzer.create_plots(plot_types=['subsets', 'rdm'], output_dir=self.output_dir, subsets=self.two_photon_triplets, n_components=6, avg_only=False)
+        self.analyzer.create_plots(plot_types=['subsets', 'rdm'], output_dir=self.output_dir, subsets=self.two_photon_triplets, n_components=4, avg_only=True)
 
