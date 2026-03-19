@@ -13,7 +13,7 @@ def rdm_analysis(
 ):
     output_dir = kwargs.get('output_dir')
     if not output_dir or not isinstance(output_dir, Path): raise ValueError('output_dir not provided')
-    rdm_output_dir = output_dir / 'distances'
+    rdm_output_dir = output_dir / 'rdm'
     rdm_output_dir.mkdir(parents=True, exist_ok=True)
     n_components = kwargs.get('n_components', 2)
     dist_metric = kwargs.get('dist_metric', 'euclidean')
