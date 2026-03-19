@@ -5,6 +5,8 @@ from pathlib import Path
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import spearmanr
 from collections import defaultdict
+from utils.utils import scale_session
+
 from data_objects.pca_data import PCAData
 
 
@@ -23,6 +25,7 @@ def rdm_analysis(
     subset_groups = {}
     all_rdms = defaultdict(list)
     stb_mtcs = []
+    sbtr_mtcs = defaultdict(list)
     for t_key in pca_data_dict.keys():
         if 'subset' not in t_key: continue
         ds_key = t_key.split('_')[0]
@@ -50,11 +53,16 @@ def rdm_analysis(
             for i, n1 in enumerate(names):
                 for j, n2 in enumerate(names):
                     stability_matrix[i, j], _ = spearmanr(rdms[n1], rdms[n2])
+                    normalized_n1 = scale_session(rdms[n1].reshape(-1, 1))
+                    normalized_n2 = scale_session(rdms[n2].reshape(-1, 1))
+                    sbtr_mtcs[f'{n1.split("_")[0]}-{n2.split("_")[0]}'].append((normalized_n1 - normalized_n2).flatten())
             stb_mtcs.append(stability_matrix)
 
             if not avg_only:
                 _plot_stability(stability_matrix, names, rdm_output_dir, name='what')
                 for name, dist_vec in rdms.items():
+                    _plot_rdm(squareform(dist_vec), morph_names, name, rdm_output_dir)
+                for name, dist_vec in sbtr_mtcs.items():
                     _plot_rdm(squareform(dist_vec), morph_names, name, rdm_output_dir)
 
     for key, value in all_rdms.items():
@@ -62,6 +70,12 @@ def rdm_analysis(
         sqr = squareform(avg_rdm)
         nms = np.arange(sqr.shape[0])
         _plot_rdm(sqr, nms, f"avg_{key}", rdm_output_dir)
+    for key, value in sbtr_mtcs.items():
+        avg_rdm = np.mean(value, axis=0)
+        sqr = squareform(avg_rdm)
+        nms = np.arange(sqr.shape[0])
+        _plot_rdm(sqr, nms, f"subtraction_{key}", rdm_output_dir)
+
     avg_stb_mx = np.mean(stb_mtcs, axis=0)
     _plot_stability(avg_stb_mx, all_rdms.keys(), rdm_output_dir, name='stability_avg')
 
