@@ -29,13 +29,16 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
             data_dfs.append(raw_data_df)
             self.metadata.process_and_append(raw_meta_df)
         processed_dfs = []
+        raw_data_dfs = []
         shared_morphs = self.metadata.get_shared_morphs()
         for data_df in data_dfs:
             filtered_df = data_df[data_df.index.isin(shared_morphs)]
-            session_mean = filtered_df.groupby('morph_name').mean()
-            scaled_session = scale_session(session_mean)
-            processed_dfs.append(scaled_session)
-
+            scaled_session = scale_session(filtered_df)
+            session_mean = scaled_session.groupby('morph_name').mean()
+            processed_dfs.append(session_mean)
+            sorted_scaled_session = scaled_session.sort_index()
+            raw_data_dfs.append(sorted_scaled_session)
+        self.raw_data = raw_data_dfs
         combined_df = pd.concat(processed_dfs, axis=1, join='inner')
         self.metadata.synchronize_with_data(combined_df)
         self.data = combined_df

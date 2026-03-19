@@ -12,6 +12,7 @@ class DataSource(ABC):
     ):
         self.file_paths = file_paths
         self.data = None
+        self.data_raw = None
         self.metadata = TrialMetadata()
         self._use_mask = False
         self.mask = None
