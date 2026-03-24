@@ -15,7 +15,7 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
         self.data_type = 'TwoPhoton'
 
 
-    def load_data(self):
+    def load_data(self, split:bool=False):
         """
         Loads the .h5 data from each session and loads them in the metadata file.
         Then, it groups the data from trials with identical stimuli together and averages the mean activation
@@ -28,6 +28,7 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
             raw_data_df.index = temp_meta.get_morph_names()
             data_dfs.append(raw_data_df)
             self.metadata.process_and_append(raw_meta_df)
+            if split: self.metadata.split_morphs()
         processed_dfs = []
         raw_data_dfs = []
         shared_morphs = self.metadata.get_shared_morphs()

@@ -168,4 +168,28 @@ class TrialMetadata:
         matches = [i for i, pair_key in enumerate(pair_keys) if search_term in str(pair_key)]
         return matches, len(matches)
 
+    def set_morph_names(self, morph_names):
+        self.metadata_df = self.metadata_df.set_index(np.array(morph_names))
+        self.metadata_df['morph_name'] = morph_names
+        self.metadata_df.index.name = 'morph'
+
+    def split_morphs(self, train_procent: float = 0.7, anchors_only: bool = False):
+        if not 0 < train_procent <= 1: raise ValueError("test_procent must be between 0 and 1")
+        morphs = self.get_morph_names()
+        counts = {}
+        for morph in morphs:
+            counts[morph] = counts.get(morph, 0) + 1
+        train_nums = {k: round(count * train_procent) for k, count in counts.items()}
+        current_counts = {}
+        adjusted_morphs = []
+        for morph in morphs:
+            current_counts[morph] = current_counts.get(morph, 0) + 1
+
+            if current_counts[morph] <= train_nums[morph]:
+                adjusted_morphs.append(f"{morph}_train")
+            else:
+                adjusted_morphs.append(f"{morph}_test")
+        adjusted_morphs = np.array(adjusted_morphs)
+        self.set_morph_names(adjusted_morphs)
+        return adjusted_morphs
 
