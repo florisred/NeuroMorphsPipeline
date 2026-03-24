@@ -55,8 +55,8 @@ class PCAManager:
                     temp_ds.filter_transitions(subset)
                     pca_data = self.run_pca(
                         all_data=temp_ds.get_data(), n_components=comps,
-                        fit_data=ds.get_anchors(), metadata=temp_ds.get_metadata(), pca_type='subsets'
-                    )
+                        fit_data=temp_ds.get_anchors(), metadata=temp_ds.get_metadata(), pca_type='subsets'
+                    ) # ds for all data, temp_ds for subset data
                     pca_data.sort()
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data

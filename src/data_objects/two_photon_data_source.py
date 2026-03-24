@@ -46,6 +46,9 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
         combined_df = pd.concat(processed_dfs, axis=1, join='inner')
         self.metadata.synchronize_with_data(combined_df)
         self.data = combined_df
+        logger.info(f"Loaded {len(self.data)} morphs with {self.data.shape[1]} neurons")
+        test =1
+
 
 
 
