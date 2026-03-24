@@ -4,6 +4,9 @@ import itertools
 from data_objects.trial_metadata import TrialMetadata
 import numpy as np
 import copy
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DataSource(ABC):
     def __init__(

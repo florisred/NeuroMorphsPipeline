@@ -16,6 +16,7 @@ class TwoPhotonMixIn:
         """
         two_photon_folder = session_dir / '2p_data'
         file = list(two_photon_folder.glob("*.h5"))
+        file = [f for f in file if not f.name.startswith('.')]
         if len(file) != 1: raise AssertionError(f"Need exactly one .hy file in {two_photon_folder}")
         f = h5py.File(file[0], 'r')
         raw_data_df = pd.DataFrame(f[data_location]).dropna(axis=0, how='all')

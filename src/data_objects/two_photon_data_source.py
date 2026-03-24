@@ -4,6 +4,9 @@ from data_objects.data_source import DataSource
 from MixIns.two_photon_mixin import TwoPhotonMixIn
 import pandas as pd
 from utils.utils import scale_session
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
