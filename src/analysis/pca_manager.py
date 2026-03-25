@@ -76,4 +76,5 @@ class PCAManager:
             metadata = metadata,
             pca_type = pca_type
         )
+        pca_data.sort()
         return pca_data
