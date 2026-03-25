@@ -69,8 +69,10 @@ class PCAManager:
             pca_result = pca_model.transform(all_data)
         else:
             pca_result = pca_model.fit_transform(all_data)
+        explained_variance = pca_model.explained_variance_ratio_
         pca_data = PCAData(
             pca_output = pca_result,
+            explained_variance = explained_variance,
             metadata = metadata,
             pca_type = pca_type
         )
