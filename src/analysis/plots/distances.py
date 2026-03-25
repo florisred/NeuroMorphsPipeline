@@ -21,7 +21,24 @@ def calculate_distances(pca_data_dict: dict[str, PCAData], **kwargs):
 
         for stem in name_stems:
             mask = pair_keys == stem
-            anchor_mask = metadata.get_morph_names().isin(stem.split('__'))
+            morph_names = metadata.get_morph_names().copy()
+            anchor_names = stem.split('__')
+            seen = {
+                anchor_names[0]: False,
+                anchor_names[1]: False,
+            }
+            for i, morph_name in enumerate(morph_names):
+                if morph_name == anchor_names[0]:
+                    if not seen[anchor_names[0]]:
+                        seen[anchor_names[0]] = True
+                    else: morph_names.iloc[i] = f'{morph_name}_pass'
+                if morph_name == anchor_names[1]:
+                    if not seen[anchor_names[1]]:
+                        seen[anchor_names[1]] = True
+                    else: morph_names.iloc[i] = f'{morph_name}_pass'
+
+            anchor_mask = morph_names.isin(anchor_names)
+
             mask = mask | anchor_mask
             pca_masked = data[mask]
             distances = [np.linalg.norm(pca_masked.iloc[i + 1] - pca_masked.iloc[i]) for i in range(len(pca_masked) - 1)]
