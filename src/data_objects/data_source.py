@@ -98,7 +98,7 @@ class DataSource(ABC):
         return self.data
 
     def get_metadata(self):
-        return self.metadata
+        return self.metadata.copy()
 
     def copy(self):
         return copy.deepcopy(self)

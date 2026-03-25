@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import numpy.typing as npt
-
+import copy
 
 class TrialMetadata:
     def __init__(self, metadata_df: pd.DataFrame = None):
@@ -99,7 +99,9 @@ class TrialMetadata:
         Returns the pair_keys of the loaded metadata
         """
 
-        pair_keys = self.metadata_df['pair_key']
+
+        if self._use_mask: pair_keys = self._masked_metadata['pair_key']
+        else: pair_keys = self.metadata_df['pair_key']
         if dropna:
             pair_keys = pair_keys.dropna()
         if unique:
@@ -192,4 +194,7 @@ class TrialMetadata:
         adjusted_morphs = np.array(adjusted_morphs)
         self.set_morph_names(adjusted_morphs)
         return adjusted_morphs
+
+    def copy(self):
+        return copy.deepcopy(self)
 
