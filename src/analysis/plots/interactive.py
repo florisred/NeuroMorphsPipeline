@@ -81,4 +81,3 @@ def create_interactive_plot(pca_data_dict: dict[str, PCAData], **kwargs):
 
             filename = output_dir / f'{pca_data.name}_{search_term}.html'
             fig.write_html(filename)
-            print(f"Plot saved to {filename}")
