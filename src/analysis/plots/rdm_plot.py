@@ -10,6 +10,10 @@ from utils.utils import scale_session
 from data_objects.pca_data import PCAData
 
 
+def rdm_analysis_full(pca_data_dict: dict[str, PCAData], **kwargs):
+    kwargs['full_data'] = True
+    rdm_analysis(pca_data_dict, **kwargs)
+
 def rdm_analysis(
         pca_data_dict: dict[str, PCAData], **kwargs
 ):
@@ -20,6 +24,8 @@ def rdm_analysis(
     n_components = kwargs.get('n_components', 2)
     dist_metric = kwargs.get('dist_metric', 'euclidean')
     avg_only = kwargs.get('avg_only', True)
+    full_data = kwargs.get('full_data', False)
+    show = kwargs.get('show', False)
 
 
     subset_groups = {}
@@ -27,7 +33,10 @@ def rdm_analysis(
     stb_mtcs = []
     sbtr_mtcs = defaultdict(list)
     for t_key in pca_data_dict.keys():
-        if 'subset' not in t_key: continue
+        if full_data:
+            if 'subset'in t_key: continue
+        else:
+            if 'full' in t_key: continue
         ds_key = t_key.split('_')[0]
         subset_name = t_key[len(ds_key) + 1:]
 
@@ -43,10 +52,12 @@ def rdm_analysis(
 
             # 1. Calculate RDMs
             for pca_data in pca_data_list:
-                data = pca_data.get_data_components(n_components=n_components)
+                pca_data_copy = pca_data.copy()
+                pca_data_copy.sort()
+                data = pca_data_copy.get_data_components(n_components=n_components)
                 distance_vector = pdist(data.values, metric=dist_metric)
-                rdms[pca_data.name] = distance_vector
-                all_rdms[pca_data.data_source].append(distance_vector)
+                rdms[pca_data_copy.name] = distance_vector
+                all_rdms[pca_data_copy.data_source].append(distance_vector)
 
             # 2. Representational Stability Matrix
             stability_matrix = np.zeros((len(names), len(names)))
@@ -59,27 +70,27 @@ def rdm_analysis(
             stb_mtcs.append(stability_matrix)
 
             if not avg_only:
-                _plot_stability(stability_matrix, names, rdm_output_dir, name='what')
+                _plot_stability(stability_matrix, names, rdm_output_dir, name='what', show=show)
                 for name, dist_vec in rdms.items():
-                    _plot_rdm(squareform(dist_vec), morph_names, name, rdm_output_dir)
+                    _plot_rdm(squareform(dist_vec), morph_names, name, rdm_output_dir, show=show)
                 for name, dist_vec in sbtr_mtcs.items():
-                    _plot_rdm(squareform(dist_vec), morph_names, name, rdm_output_dir)
+                    _plot_rdm(squareform(dist_vec), morph_names, name, rdm_output_dir, show=show)
 
     for key, value in all_rdms.items():
         avg_rdm = np.mean(value, axis=0)
         sqr = squareform(avg_rdm)
         nms = np.arange(sqr.shape[0])
-        _plot_rdm(sqr, nms, f"avg_{key}", rdm_output_dir)
+        _plot_rdm(sqr, nms, f"avg_{key}", rdm_output_dir, show=show)
     for key, value in sbtr_mtcs.items():
         avg_rdm = np.mean(value, axis=0)
         sqr = squareform(avg_rdm)
         nms = np.arange(sqr.shape[0])
-        _plot_rdm(sqr, nms, f"subtraction_{key}", rdm_output_dir)
+        _plot_rdm(sqr, nms, f"subtraction_{key}", rdm_output_dir, show=show)
 
     avg_stb_mx = np.mean(stb_mtcs, axis=0)
-    _plot_stability(avg_stb_mx, all_rdms.keys(), rdm_output_dir, name='stability_avg')
+    _plot_stability(avg_stb_mx, all_rdms.keys(), rdm_output_dir, name='stability_avg', show=show)
 
-def _plot_stability(matrix, labels, output_dir, name):
+def _plot_stability(matrix, labels, output_dir, name, show):
     # We increase width to accommodate long session names
     plt.figure(figsize=(12, 10))
 
@@ -94,10 +105,10 @@ def _plot_stability(matrix, labels, output_dir, name):
     # tight_layout fixes the "cutoff" text on the left/bottom
     plt.tight_layout()
     plt.savefig(output_dir / f"{name}.png")
-    plt.show()  # Forces the plot to show in the console/notebook
+    if show: plt.show()  # Forces the plot to show in the console/notebook
 
 
-def _plot_rdm(matrix, labels, name, output_dir):
+def _plot_rdm(matrix, labels, name, output_dir, show):
     scale_factor = max(10, len(labels) * 0.3)
     plt.figure(figsize=(scale_factor, scale_factor))
     ax = sns.heatmap(matrix, xticklabels=labels, yticklabels=labels,
@@ -115,4 +126,4 @@ def _plot_rdm(matrix, labels, name, output_dir):
 
     plt.tight_layout()
     plt.savefig(output_dir / f"rdm_{name}.png", bbox_inches='tight')
-    plt.show()  # Forces the plot to show in the loop
+    if show: plt.show()  # Forces the plot to show in the loop
