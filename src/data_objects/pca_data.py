@@ -46,92 +46,159 @@ class PCAData:
     def get_numeric_index(self):
         return np.arange(len(self.pca_data))
 
-    def sor2t(self):
-        """
-        Returns a list of integer indices that sorts the input
-        according to the cyclical material path.
-        """
+    # def sor2t(self):
+    #     """
+    #     Returns a list of integer indices that sorts the input
+    #     according to the cyclical material path.
+    #     """
+    #     morph_names = self.metadata.get_morph_names(as_list=True)
+    #     anchor_order = sorted(self.metadata.get_anchor_names())
+    #
+    #     path = []
+    #     for i in range(len(anchor_order)):
+    #         start = anchor_order[i]
+    #         end = anchor_order[(i + 1) % len(anchor_order)]
+    #         path.append((start, end))
+    #
+    #     sorted_names = []
+    #     for start, end in path:
+    #         # 1. Add the anchor
+    #         if start in morph_names:
+    #             sorted_names.append(start)
+    #
+    #         # 2. Find and sort the transition leg
+    #         leg = []
+    #         for m in morph_names:
+    #             if start in m and end in m and start != end:
+    #                 match = re.search(rf"{start}_([\d.]+)", m)
+    #                 if match:
+    #                     weight = float(match.group(1))
+    #                     leg.append((m, weight))
+    #
+    #         leg.sort(key=lambda x: x[1], reverse=True)
+    #         sorted_names.extend([m[0] for m in leg])
+    #
+    #     # --- THE INTEGRATION STEP ---
+    #     # Create a mapping of {name: desired_position}
+    #     name_to_pos = {name: i for i, name in enumerate(sorted_names)}
+    #
+    #     # Generate the index array based on where each current label should go
+    #     # This handles duplicates if your 'morph_names' has multiple rows per morph
+    #     sorted_idx = sorted(range(len(morph_names)),
+    #                         key=lambda k: name_to_pos.get(morph_names[k], 999))
+    #
+    #     self._pca_df = self._pca_df.iloc[sorted_idx]
+    #     self.metadata.sort(sorted_idx)
+    #
+    # def sor3t(self, custom_order=None):
+    #     morph_names = self.metadata.get_morph_names(as_list=True)
+    #     # 1. Use custom order or fallback to alphabetical
+    #     anchors = custom_order or sorted(self.metadata.get_anchor_names())
+    #
+    #     if len(anchors) < 2: return
+    #
+    #     sorted_names = []
+    #     visited_morphs = set()
+    #
+    #     # Create a path (e.g., A->B, B->C, C->A)
+    #     path = [(anchors[i], anchors[(i + 1) % len(anchors)]) for i in range(len(anchors))]
+    #
+    #     for start, end in path:
+    #         # Add the anchor (if not already added by a previous leg)
+    #         if start in morph_names and start not in sorted_names:
+    #             sorted_names.append(start)
+    #
+    #         leg = []
+    #         for m in morph_names:
+    #             if m not in visited_morphs and start in m and end in m:
+    #                 # Extract weight of the 'start' anchor
+    #                 match = re.search(rf"{re.escape(start)}_([\d.]+)", m)
+    #                 if match:
+    #                     leg.append((m, float(match.group(1))))
+    #
+    #         # Sort by weight of 'start' anchor (descending: 0.9 -> 0.1)
+    #         leg.sort(key=lambda x: x[1], reverse=True)
+    #
+    #         for m, _ in leg:
+    #             sorted_names.append(m)
+    #             visited_morphs.add(m)
+    #
+    #     # Final check for any orphaned morphs (e.g. 3-way morphs)
+    #     remaining = [m for m in morph_names if m not in sorted_names]
+    #     sorted_names.extend(remaining)
+    #
+    #     # Apply indices...
+    #     name_to_pos = {name: i for i, name in enumerate(sorted_names)}
+    #     sorted_idx = sorted(range(len(morph_names)),
+    #                         key=lambda k: name_to_pos.get(morph_names[k], 999))
+    #
+    #     self._pca_df = self._pca_df.iloc[sorted_idx]
+    #     self.metadata.sort(sorted_idx)
+
+    def so4rt(self, custom_order=None):
         morph_names = self.metadata.get_morph_names(as_list=True)
-        anchor_order = sorted(self.metadata.get_anchor_names())
-
-        path = []
-        for i in range(len(anchor_order)):
-            start = anchor_order[i]
-            end = anchor_order[(i + 1) % len(anchor_order)]
-            path.append((start, end))
-
-        sorted_names = []
-        for start, end in path:
-            # 1. Add the anchor
-            if start in morph_names:
-                sorted_names.append(start)
-
-            # 2. Find and sort the transition leg
-            leg = []
-            for m in morph_names:
-                if start in m and end in m and start != end:
-                    match = re.search(rf"{start}_([\d.]+)", m)
-                    if match:
-                        weight = float(match.group(1))
-                        leg.append((m, weight))
-
-            leg.sort(key=lambda x: x[1], reverse=True)
-            sorted_names.extend([m[0] for m in leg])
-
-        # --- THE INTEGRATION STEP ---
-        # Create a mapping of {name: desired_position}
-        name_to_pos = {name: i for i, name in enumerate(sorted_names)}
-
-        # Generate the index array based on where each current label should go
-        # This handles duplicates if your 'morph_names' has multiple rows per morph
-        sorted_idx = sorted(range(len(morph_names)),
-                            key=lambda k: name_to_pos.get(morph_names[k], 999))
-
-        self._pca_df = self._pca_df.iloc[sorted_idx]
-        self.metadata.sort(sorted_idx)
-
-    def sort(self, custom_order=None):
-        morph_names = self.metadata.get_morph_names(as_list=True)
-        # 1. Use custom order or fallback to alphabetical
         anchors = custom_order or sorted(self.metadata.get_anchor_names())
 
         if len(anchors) < 2: return
 
-        sorted_names = []
-        visited_morphs = set()
+        final_sequence = []
+        visited_intermediates = set()
 
-        # Create a path (e.g., A->B, B->C, C->A)
+
         path = [(anchors[i], anchors[(i + 1) % len(anchors)]) for i in range(len(anchors))]
 
         for start, end in path:
-            # Add the anchor (if not already added by a previous leg)
-            if start in morph_names and start not in sorted_names:
-                sorted_names.append(start)
+            if start in morph_names:
+                final_sequence.append(start)
 
-            leg = []
+            leg_intermediates = []
             for m in morph_names:
-                if m not in visited_morphs and start in m and end in m:
-                    # Extract weight of the 'start' anchor
-                    match = re.search(rf"{re.escape(start)}_([\d.]+)", m)
-                    if match:
-                        leg.append((m, float(match.group(1))))
+                if m not in anchors and m not in visited_intermediates:
+                    if start in m and end in m:
+                        match = re.search(rf"{re.escape(start)}_([\d.]+)", m)
+                        if match:
+                            leg_intermediates.append((m, float(match.group(1))))
 
-            # Sort by weight of 'start' anchor (descending: 0.9 -> 0.1)
-            leg.sort(key=lambda x: x[1], reverse=True)
+            leg_intermediates.sort(key=lambda x: x[1], reverse=True)
 
-            for m, _ in leg:
-                sorted_names.append(m)
-                visited_morphs.add(m)
+            for m, _ in leg_intermediates:
+                final_sequence.append(m)
+                visited_intermediates.add(m)
 
-        # Final check for any orphaned morphs (e.g. 3-way morphs)
-        remaining = [m for m in morph_names if m not in sorted_names]
-        sorted_names.extend(remaining)
+            if end in morph_names:
+                final_sequence.append(end)
 
-        # Apply indices...
-        name_to_pos = {name: i for i, name in enumerate(sorted_names)}
-        sorted_idx = sorted(range(len(morph_names)),
-                            key=lambda k: name_to_pos.get(morph_names[k], 999))
+        remaining = [m for m in morph_names if m not in final_sequence]
+        final_sequence.extend(remaining)
 
-        self._pca_df = self._pca_df.iloc[sorted_idx]
-        self.metadata.sort(sorted_idx)
 
+        name_to_orig_idx = {name: i for i, name in enumerate(morph_names)}
+
+
+        new_indices = [name_to_orig_idx[name] for name in final_sequence if name in name_to_orig_idx]
+        self._pca_df = self._pca_df.iloc[new_indices]
+        self.metadata.sort(new_indices)
+
+
+
+
+    def sort(self):
+        morph_names = self.metadata.get_morph_names(as_list=True)
+        pair_keys =self.metadata.get_pair_keys()
+
+        final_sequence = []
+        for pair_key in pair_keys:
+            matching_morphs = self.metadata_df[self.metadata.get_pair_keys(unique=False, dropna=False) == pair_key]
+            final_sequence.append(np.unique(matching_morphs['src_cat'])[0])
+            matching_morphs.sort_values(by='norm_step', inplace=True)
+            for morph_name in matching_morphs.index:
+                final_sequence.append(morph_name)
+            final_sequence.append(np.unique(matching_morphs['dst_cat'])[0])
+
+        name_to_orig_idx = {name: i for i, name in enumerate(morph_names)}
+
+
+        new_indices = [name_to_orig_idx[name] for name in final_sequence if name in name_to_orig_idx]
+
+        self._pca_df = self._pca_df.iloc[new_indices]
+        self.metadata.sort(new_indices, allow_mismatch=True)
