@@ -60,12 +60,12 @@ class TrialMetadata:
         df['step_index'] = np.where(
             df['stim_type'] == 'anchor',
             np.nan,
-            df['src_cat']
+            df['step_index']
         )
         df['norm_step'] = np.where(
             df['stim_type'] == 'anchor',
             np.nan,
-            df['src_cat']
+            df['norm_step']
         )
         df.index = df['morph_name']
         df.rename_axis('morph', inplace=True)
@@ -145,16 +145,16 @@ class TrialMetadata:
         if self._use_mask: return self._masked_metadata
         else: return self.metadata_df
 
-    def sort(self, sorted_idx):
+    def sort(self, sorted_idx, allow_mismatch: bool = False):
         """
         sorts either the masked data or real data, based on if the mask is used.
         """
         if self._use_mask:
-            if len(self._masked_metadata) != len(sorted_idx):
+            if (len(self.metadata_df) != len(sorted_idx)) and not allow_mismatch:
                 raise ValueError("the length of the sorted idx does not match the length of the metadata")
             self._masked_metadata = self._masked_metadata.iloc[sorted_idx]
         else:
-            if len(self.metadata_df) != len(sorted_idx):
+            if (len(self.metadata_df) != len(sorted_idx)) and not allow_mismatch:
                 raise ValueError("the length of the sorted idx does not match the length of the metadata")
             self.metadata_df = self.metadata_df.iloc[sorted_idx]
 
