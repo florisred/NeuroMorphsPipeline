@@ -71,10 +71,10 @@ class Pipeline:
         self.analyzer.load_datasource(data_source=stimulus_pixel)
         self.analyzer.load_datasource(data_source=stimulus_gabor)
 
-    def create_plots(self):
+    def create_plots(self, n_components = 3, avg_only = True):
         # self.analyzer.create_plots([ 'interactive', 'distances'], output_dir=self.output_dir, n_components=6)
         # self.analyzer.create_plots(
         #     plot_types=['rdm'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=2, avg_only = True
         # )
         #self.analyzer.create_plots(plot_types=['subsets', 'rdm'], output_dir=self.output_dir, subsets=self.two_photon_triplets, n_components=2, avg_only=True, full_data = True)
-        self.analyzer.create_plots(plot_types=['rdm_full'], output_dir=self.output_dir, n_components=2, avg_only=True)
+        self.analyzer.create_plots(plot_types=['rdm_full'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)

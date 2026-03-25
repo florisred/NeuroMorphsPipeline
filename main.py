@@ -11,4 +11,7 @@ if __name__ == "__main__":
     nm = Pipeline()
     nm.load_two_photon(split=False)
     nm.load_stimuli()
-    nm.create_plots()
+    nm.create_plots(
+        avg_only=True,
+        n_components=5
+    )
