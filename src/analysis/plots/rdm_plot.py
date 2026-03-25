@@ -48,18 +48,12 @@ def rdm_analysis(
             rdm_output_dir.mkdir(parents=True, exist_ok=True)
             rdms = {}
             names = [d.name for d in pca_data_list]
-            morph_names = pca_data_list[0].metadata.get_morph_names()
-
-            # 1. Calculate RDMs
             for pca_data in pca_data_list:
-                pca_data_copy = pca_data.copy()
-                pca_data_copy.sort()
-                data = pca_data_copy.get_data_components(n_components=n_components)
+                data = pca_data.get_data_components(n_components=n_components)
                 distance_vector = pdist(data.values, metric=dist_metric)
-                rdms[pca_data_copy.name] = distance_vector
-                all_rdms[pca_data_copy.data_source].append(distance_vector)
-
-            # 2. Representational Stability Matrix
+                rdms[pca_data.name] = distance_vector
+                all_rdms[pca_data.data_source].append(distance_vector)
+                morph_names = pca_data.metadata.get_morph_names()
             stability_matrix = np.zeros((len(names), len(names)))
             for i, n1 in enumerate(names):
                 for j, n2 in enumerate(names):
@@ -91,22 +85,15 @@ def rdm_analysis(
     _plot_stability(avg_stb_mx, all_rdms.keys(), rdm_output_dir, name='stability_avg', show=show)
 
 def _plot_stability(matrix, labels, output_dir, name, show):
-    # We increase width to accommodate long session names
     plt.figure(figsize=(12, 10))
-
-    # Using viridis (default behavior: higher correlation = brighter/yellower)
     sns.heatmap(matrix, annot=True, fmt=".2f", cmap='viridis',
                 xticklabels=labels, yticklabels=labels, square=True)
-
     plt.xticks(rotation=45, ha='right')
     plt.yticks(rotation=0)
     plt.title(f"Representational Stability {name})", pad=20, fontsize=15)
-
-    # tight_layout fixes the "cutoff" text on the left/bottom
     plt.tight_layout()
     plt.savefig(output_dir / f"{name}.png")
-    if show: plt.show()  # Forces the plot to show in the console/notebook
-
+    if show: plt.show()
 
 def _plot_rdm(matrix, labels, name, output_dir, show):
     scale_factor = max(10, len(labels) * 0.3)
