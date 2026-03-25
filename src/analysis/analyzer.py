@@ -14,14 +14,16 @@ class Analyzer:
         'interactive': interactive.create_interactive_plot,
         'distances': distances.calculate_distances,
         'subsets': subsets_plot.create_subset_plots,
-        'rdm': rdm_plot.rdm_analysis
+        'rdm': rdm_plot.rdm_analysis,
+        'rdm_full': rdm_plot.rdm_analysis_full
     }
 
     PCA_REQUIREMENTS = {
         'interactive': 'full',
         'distances': 'full',
         'subsets': 'subsets',
-        'rdm': 'subsets'
+        'rdm': 'subsets',
+        'rdm_full': 'full'
     }
 
     def __init__(self, n_components: int = 3):
@@ -37,34 +39,21 @@ class Analyzer:
             subsets: Optional[List] = None,
             n_components: Optional[int] = None,
             avg_only: bool = False,
-            remove_prev: bool = True
+            remove_prev: bool = True,
+            show: bool = False
     ):
-        """Coordinates data preparation and triggers the requested plotting functions."""
         params = {k: v for k, v in locals().items() if k != 'self'}
-        # 1. Immediate validation (No Mixin required!)
-        #self._validate_request(**params)
 
         if remove_prev:
             self.pca_manager.clear_cache()
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 2. Prepare all required data dynamically based on requirements
         required_pca_types = {self.PCA_REQUIREMENTS[p] for p in plot_types if p in self.PCA_REQUIREMENTS}
         for req_type in required_pca_types:
             self.pca_manager.prepare_data(pca_type=req_type, n_components=n_components, subsets=subsets)
 
-        # 3. Dispatch to the plotting functions
         for plot_type in plot_types:
             plot_func = self.PLOT_REGISTRY.get(plot_type)
             if plot_func:
                 logger.info(f"Generating {plot_type} plots...")
                 plot_func(self.pca_manager.cache, **params)
-
-    def _validate_request(self, plot_types, output_dir):
-        """Simple, localized validation."""
-        if not isinstance(output_dir, Path):
-            raise TypeError("output_dir must be a Path object")
-
-        invalid = set(plot_types) - set(self.PLOT_REGISTRY.keys())
-        if invalid:
-            raise ValueError(f"Invalid plot types requested: {invalid}. Allowed: {list(self.PLOT_REGISTRY.keys())}")
