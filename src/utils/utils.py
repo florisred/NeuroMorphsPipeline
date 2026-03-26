@@ -1,6 +1,7 @@
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import numpy as np
+from collections import Counter
 
 
 def scale_session(X):
@@ -27,3 +28,34 @@ def create_name_from_list(transition_list: list, first_part: str ='subset'):
     for anchor in unique_anchs:
         final_name += f'-{anchor}'
     return final_name
+
+
+def split_morphs(raw_trials: pd.DataFrame, raw_metadata: pd.DataFrame, train_percent: float = 0.7, seed: int = 42):
+    if not 0 < train_percent <= 1: raise ValueError("test_procent must be between 0 and 1")
+    shuffled_trials, shuffled_metadata, permutation = shuffle(raw_trials, raw_metadata, seed)
+
+    counts = Counter()
+    total_counts = Counter(shuffled_metadata.index)
+    labels = []
+    for morph in shuffled_metadata.index:
+        counts[morph] += 1
+        limit = round(total_counts[morph] * train_percent)
+        tag = "train" if counts[morph] <= limit else "test"
+        labels.append(f"{morph}_{tag}")
+
+    shuffled_metadata.index = labels
+    shuffled_metadata['morph_name'] = labels
+    shuffled_trials.index = labels
+    shuffled_metadata.rename_axis('morph', inplace=True)
+    shuffled_trials.rename_axis('morph_name', inplace=True)
+    return shuffled_trials, shuffled_metadata
+
+
+
+
+def shuffle(raw_data_df: pd.DataFrame, raw_metadata_df: pd.DataFrame, seed: int = 42):
+    if len(raw_metadata_df) != len(raw_data_df): raise ValueError("Data and Metadata row counts do not match")
+    rng = np.random.default_rng(seed)
+    permutation = rng.permutation(len(raw_metadata_df))
+    return raw_data_df.iloc[permutation], raw_metadata_df.iloc[permutation], permutation
+

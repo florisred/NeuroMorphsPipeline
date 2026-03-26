@@ -103,10 +103,6 @@ class DataSource(ABC):
     def copy(self):
         return copy.deepcopy(self)
 
-    def split_morphs(self, train_procent: float = 0.7, anchors_only: bool = False):
-        adjusted_morphs = self.metadata.split_morphs(train_procent, anchors_only)
-        self.data.set_index(adjusted_morphs, inplace=True)
-
 
 
 

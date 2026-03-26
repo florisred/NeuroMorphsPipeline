@@ -69,9 +69,11 @@ class TrialMetadata:
         )
         df.index = df['morph_name']
         df.rename_axis('morph', inplace=True)
+        self.append(df=df)
+
+    def append(self, df: pd.DataFrame):
         self.trial_lens.append(df.shape[0])
         self.metadata_df = pd.concat([self.metadata_df, df])
-
 
     def synchronize_with_data(self, combined_df: pd.DataFrame):
         """
@@ -88,6 +90,10 @@ class TrialMetadata:
         """
         if as_list: return self.get_metadata()['morph_name'].values
         return self.get_metadata()['morph_name']
+
+    @property
+    def row_num(self):
+        return self.get_metadata().shape[0]
 
     def get_pair_keys(
             self,
@@ -147,6 +153,9 @@ class TrialMetadata:
         if self._use_mask: return self._masked_metadata
         else: return self.metadata_df
 
+    def shuffle(self, random_state=42):
+        self.metadata_df = self.metadata_df.sample(frac=1, random_state=random_state)
+
     def sort(self, sorted_idx, allow_mismatch: bool = False):
         """
         sorts either the masked data or real data, based on if the mask is used.
@@ -175,25 +184,7 @@ class TrialMetadata:
         self.metadata_df['morph_name'] = morph_names
         self.metadata_df.index.name = 'morph'
 
-    def split_morphs(self, train_procent: float = 0.7, anchors_only: bool = False):
-        if not 0 < train_procent <= 1: raise ValueError("test_procent must be between 0 and 1")
-        morphs = self.get_morph_names()
-        counts = {}
-        for morph in morphs:
-            counts[morph] = counts.get(morph, 0) + 1
-        train_nums = {k: round(count * train_procent) for k, count in counts.items()}
-        current_counts = {}
-        adjusted_morphs = []
-        for morph in morphs:
-            current_counts[morph] = current_counts.get(morph, 0) + 1
 
-            if current_counts[morph] <= train_nums[morph]:
-                adjusted_morphs.append(f"{morph}_train")
-            else:
-                adjusted_morphs.append(f"{morph}_test")
-        adjusted_morphs = np.array(adjusted_morphs)
-        self.set_morph_names(adjusted_morphs)
-        return adjusted_morphs
 
     def copy(self):
         return copy.deepcopy(self)

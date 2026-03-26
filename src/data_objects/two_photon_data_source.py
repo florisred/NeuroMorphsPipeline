@@ -3,7 +3,7 @@ from data_objects.trial_metadata import TrialMetadata
 from data_objects.data_source import DataSource
 from MixIns.two_photon_mixin import TwoPhotonMixIn
 import pandas as pd
-from utils.utils import scale_session
+from utils.utils import scale_session, split_morphs
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
         self.data_type = 'TwoPhoton'
 
 
-    def load_data(self, split:bool=False):
+    def load_data(self, split:bool=False, seed:int=42):
         """
         Loads the .h5 data from each session and loads them in the metadata file.
         Then, it groups the data from trials with identical stimuli together and averages the mean activation
@@ -28,10 +28,14 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
             raw_data_df, raw_meta_df = self._load_h5_file(session_dir, self.data_location, self.labels_list)
             temp_meta = TrialMetadata()
             temp_meta.process_and_append(raw_meta_df)
-            raw_data_df.index = temp_meta.get_morph_names()
+            raw_morph_names = temp_meta.get_morph_names()
+            temp_meta_df = temp_meta.metadata_df
+            raw_data_df.index = raw_morph_names
+            if split: raw_data_df, raw_meta_df = split_morphs(raw_trials=raw_data_df, raw_metadata=temp_meta_df, seed=seed)
             data_dfs.append(raw_data_df)
-            self.metadata.process_and_append(raw_meta_df)
-            if split: self.metadata.split_morphs()
+            self.metadata.append(raw_meta_df)
+
+
         processed_dfs = []
         raw_data_dfs = []
         shared_morphs = self.metadata.get_shared_morphs()
