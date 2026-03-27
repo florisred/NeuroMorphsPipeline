@@ -10,6 +10,9 @@ if __name__ == "__main__":
 
     nm = Pipeline()
     nm.load_two_photon(split=True)
+    nm.load_two_photon(split=False)
+    nm.create_split_data_rdm(show=True)
+
     #nm.load_stimuli()
 
     #nm.create_pair_plots()
