@@ -7,6 +7,9 @@ from analysis.analyzer import Analyzer
 from data_objects.stimulus_data_source import StimulusGaborDataSource, StimulusPixelWiseDataSource
 
 class Pipeline:
+    """
+    Class that handles the data pipeline
+    """
 
     def __init__(self):
 
@@ -16,7 +19,6 @@ class Pipeline:
         project_root = Path(__file__).parent.parent
         config_dir = project_root / "config"
         settings_file = config_dir / "settings.json"
-
 
         # check if there is a config file, if not let user generate it
         if not settings_file.is_file():
@@ -44,25 +46,25 @@ class Pipeline:
 
 
     def load_two_photon(self, split:bool = False):
+        """
+        Loads the two photon data into a DataSource Object, retrieves the location from the config file
+        :param split: Boolean to indicate whether to split the data into train and test categories
+        """
+
         two_photon = TwoPhotonDataSource(
             file_paths=self.session_dirs,
             data_location=self.settings["PSEUDOPOP_DATA"]
         )
         two_photon.load_data(split=split)
-        self.two_photon_triplets = two_photon.find_stimulus_cycles(n=3)
-        two_photon_pairs = two_photon.metadata.get_pair_keys(unique=True, dropna=True)
+        self.two_photon_triplets = two_photon.find_stimulus_cycles(n=3) # finds possible triplets for the graphs later on
+        two_photon_pairs = two_photon.metadata.get_pair_keys(unique=True, dropna=True) # finds all pairs for the graphs
         self.two_photon_pairs = [[pair] for pair in two_photon_pairs]
-
-        self.analyzer.load_datasource(data_source=two_photon)
-
-        ## testing
-
-        two_photon.filter_transitions(['bark__honeycomb'])
-        two_photon.train_test_mask('train')
-        test = 1
+        self.analyzer.load_datasource(data_source=two_photon) # loads the datasource into the Analyzer() object
 
     def load_stimuli(self):
-
+        """
+        Loads the stimulus data into a DataSource Object, retrieves the location from the config file
+        """
         stimulus_gabor = StimulusGaborDataSource(
             file_paths=[self.data_dir / 'stimuli'],
             gabor_params = self.settings["gabor_params"],
@@ -93,3 +95,12 @@ class Pipeline:
     def create_triplet_plots(self, avg_only = True):
         self.analyzer.create_plots(plot_types=['subsets', 'rdm'], output_dir=self.output_dir,
                                    subsets=self.two_photon_triplets, n_components=3, avg_only=avg_only)
+
+    def create_split_data_rdm(self, show=False):
+        self.analyzer.create_plots(
+            plot_types=['rdm_split_full'],
+            output_dir=self.output_dir,
+            n_components=3,
+            avg_only=True,
+            show=show
+        )
