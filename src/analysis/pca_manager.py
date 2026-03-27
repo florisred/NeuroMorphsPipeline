@@ -53,6 +53,7 @@ class PCAManager:
 
                     temp_ds = ds.copy()
                     temp_ds.filter_transitions(subset)
+
                     pca_data = self.run_pca(
                         all_data=temp_ds.get_data(), n_components=comps,
                         fit_data=temp_ds.get_anchors(), metadata=temp_ds.get_metadata(), pca_type='subsets'
