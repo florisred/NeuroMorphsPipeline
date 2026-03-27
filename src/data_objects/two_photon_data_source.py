@@ -24,6 +24,7 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
         Then, it groups the data from trials with identical stimuli together and averages the mean activation
         """
         data_dfs = []
+        self._split = split
         for session_dir in self.file_paths:
             raw_data_df, raw_meta_df = self._load_h5_file(session_dir, self.data_location, self.labels_list)
             temp_meta = TrialMetadata()
@@ -46,11 +47,11 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
             processed_dfs.append(session_mean)
             sorted_scaled_session = scaled_session.sort_index()
             raw_data_dfs.append(sorted_scaled_session)
-        self.raw_data = raw_data_dfs
+        self._raw_data = raw_data_dfs
         combined_df = pd.concat(processed_dfs, axis=1, join='inner')
         self.metadata.synchronize_with_data(combined_df)
-        self.data = combined_df
-        logger.info(f"Loaded {len(self.data)} morphs with {self.data.shape[1]} neurons")
+        self._data = combined_df
+        logger.info(f"Loaded {len(combined_df)} morphs with {combined_df.shape[1]} neurons")
 
 
 

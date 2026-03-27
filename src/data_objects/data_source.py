@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 import itertools
+
+import pandas as pd
+
 from data_objects.trial_metadata import TrialMetadata
 import numpy as np
 import copy
@@ -14,15 +17,54 @@ class DataSource(ABC):
             file_paths: list[Path],
     ):
         self.file_paths = file_paths
-        self.data = None
-        self.data_raw = None
+        self._data = None
+        self._data_raw = None
         self.metadata = TrialMetadata()
-        self._use_mask = False
         self.mask = None
         self.data_type = 'Unknown'
+        self._use_train_test_all = 'all'
+        self._train_mask = None
+        self._filter_mask = None
+        self._use_mask = False
+        self._split = False
+
 
     def get_data_type(self) -> str:
-        return self.data_type
+        return f'{self.data_type}_{self._use_train_test_all}'
+
+    def train_test_mask(self, to_use: str):
+        if to_use not in ['test', 'train', 'all']:
+            logger.error('Use either test, train, or all')
+        self._use_train_test_all = to_use
+        if to_use == 'all':
+            self._train_mask = [True for i in range(len(self._data))]
+        else:
+            self._train_mask = self._data.index.str.endswith(to_use)
+        self.metadata.apply_train_mask(self._train_mask)
+        self._use_mask = True
+
+    def filter_transitions(self, transitions: list[str]):
+        """
+        applies a mask to the
+        """
+        if type(transitions) is not list: raise TypeError('transitions should be a list')
+        mask1 = self.metadata.get_pair_keys(
+            unique=False,
+            dropna=False,
+        ).isin(transitions)
+        relevant_anchors = np.unique(
+            [texture for transition in transitions for texture in transition.split('__')])
+        all_morph_names =  self.metadata.get_morph_names(ignore_mask=True)
+        if self._split:
+            all_morph_names = [name.split('_')[-2] for name in all_morph_names]
+        mask_relevant_anchors = [name in relevant_anchors for name in all_morph_names]
+        final_mask = mask1 | np.array(mask_relevant_anchors)
+        if self._train_mask is not None: final_mask &= self._train_mask
+
+        self._train_mask = final_mask
+        self.metadata.apply_mask(final_mask)
+        self._use_mask = True
+
 
     @abstractmethod
     def load_data(self):
@@ -69,24 +111,6 @@ class DataSource(ABC):
         return found_cycles
 
 
-
-    def filter_transitions(self, transitions: list[str]):
-        """
-        applies a mask to the
-        """
-        mask1 = self.metadata.get_pair_keys(
-            unique=False,
-            dropna=False,
-        ).isin(transitions)
-        relevant_anchors = np.unique(
-            [texture for transition in transitions for texture in transition.split('__')])
-        mask_relevant_morphs = self.metadata.get_morph_names().isin(relevant_anchors)
-        final_mask = mask1 | mask_relevant_morphs
-        self.mask = final_mask
-        self.metadata.apply_mask(final_mask)
-        self._use_mask = True
-
-
     def get_anchors(self):
         mask = self.metadata.get_anchor_mask()
         filtered_data = self.get_data()[mask]
@@ -94,8 +118,18 @@ class DataSource(ABC):
 
     def get_data(self):
         if self._use_mask:
-            return self.data[self.mask]
-        return self.data
+            if self._train_mask is not None and self._filter_mask is not None:
+                mask = self._train_mask & self._filter_mask
+            elif self._train_mask is not None:
+                mask = self._train_mask
+            elif self._filter_mask is not None:
+                mask = self._filter_mask
+            else:
+                logger.error("Somehow, mask was activated without either a train_mask or a filter_mask. Check what happened!")
+                mask = [True for i in range(len(self._data))]
+            return self._data[mask]
+
+        return self._data
 
     def get_metadata(self):
         return self.metadata.copy()
@@ -107,3 +141,4 @@ class DataSource(ABC):
 
 
 
+## ToDo: Add a disable mask option

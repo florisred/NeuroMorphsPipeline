@@ -11,6 +11,8 @@ class TrialMetadata:
         self.trial_lens = []
         self._masked_metadata = None
         self._use_mask = False
+        self._train_mask = None
+        self._filter_mask = None
 
     def process_and_append(self, raw_trials_metadata_df: pd.DataFrame):
         """
@@ -84,12 +86,12 @@ class TrialMetadata:
 
         self.metadata_df = metadata_lookup.reindex(combined_df.index).rename_axis(index='morph')
 
-    def get_morph_names(self, as_list:bool = False) -> pd.Series|list:
+    def get_morph_names(self, as_list:bool = False, ignore_mask = False) -> pd.Series|list:
         """
         Returns the morph names of the loaded metadata in pd.Series format
         """
-        if as_list: return self.get_metadata()['morph_name'].values
-        return self.get_metadata()['morph_name']
+        if as_list: return self.get_metadata(ignore_mask=ignore_mask)['morph_name'].values
+        return self.get_metadata(ignore_mask=ignore_mask)['morph_name']
 
     @property
     def row_num(self):
@@ -133,10 +135,22 @@ class TrialMetadata:
         return list(shared_morphs)
 
     def apply_mask(self, mask):
+        self._filter_mask = mask
+        if self._train_mask is not None:
+            mask &= self._train_mask
+        self._masked_metadata = self.metadata_df[mask]
+        self._use_mask = True
+
+    def apply_train_mask(self, mask):
+        self._train_mask = mask
+        if self._filter_mask is not None:
+            mask &= self._filter_mask
         self._masked_metadata = self.metadata_df[mask]
         self._use_mask = True
 
     def disable_mask(self):
+        self._filter_mask = None
+        self._train_mask = None
         self._use_mask = False
 
     def get_anchor_mask(self):
@@ -149,8 +163,8 @@ class TrialMetadata:
     def get_anchor_names(self):
         return self.get_anchors()['morph_name']
 
-    def get_metadata(self):
-        if self._use_mask: return self._masked_metadata
+    def get_metadata(self, ignore_mask = False):
+        if self._use_mask and not ignore_mask: return self._masked_metadata
         else: return self.metadata_df
 
     def shuffle(self, random_state=42):
