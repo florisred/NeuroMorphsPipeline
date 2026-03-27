@@ -30,7 +30,9 @@ class DataSource(ABC):
 
 
     def get_data_type(self) -> str:
-        return f'{self.data_type}_{self._use_train_test_all}'
+        if self.is_split:
+            return f'{self.data_type}split'
+        else: return self.data_type
 
     def train_test_mask(self, to_use: str):
         if to_use not in ['test', 'train', 'all']:
@@ -64,6 +66,10 @@ class DataSource(ABC):
         self._train_mask = final_mask
         self.metadata.apply_mask(final_mask)
         self._use_mask = True
+
+    @property
+    def is_split(self):
+        return self._split
 
 
     @abstractmethod
