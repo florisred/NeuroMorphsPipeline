@@ -32,9 +32,9 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
             raw_morph_names = temp_meta.get_morph_names()
             temp_meta_df = temp_meta.metadata_df
             raw_data_df.index = raw_morph_names
-            if split: raw_data_df, raw_meta_df = split_morphs(raw_trials=raw_data_df, raw_metadata=temp_meta_df, seed=seed)
+            if split: raw_data_df, temp_meta_df = split_morphs(raw_trials=raw_data_df, raw_metadata=temp_meta_df, seed=seed)
             data_dfs.append(raw_data_df)
-            self.metadata.append(raw_meta_df)
+            self.metadata.append(temp_meta_df)
 
 
         processed_dfs = []
