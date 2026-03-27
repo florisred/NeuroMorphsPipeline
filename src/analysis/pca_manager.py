@@ -18,26 +18,39 @@ class PCAManager:
         self.cache: dict[str, any] = {}
 
     def clear_cache(self):
+        """Clears the PCA cache."""
         self.cache.clear()
 
     def add_datasource(self, data_source: DataSource):
+        """
+        Adds a datasource to the object for analysis.
+        :param data_source: DataSource object to be added
+        """
         key = data_source.data_type
         if key in self.datasources:
             logger.warning(f"Overwriting datasource: {key}")
         self.datasources[key] = data_source
 
     def prepare_data(self, pca_type: str, n_components: Optional[int] = None, subsets: Optional[List] = None):
-        """Ensures the cache contains the requested pca_type for all datasources."""
+        """
+        Ensures the cache contains the requested pca_type for all datasources.
+
+        :param pca_type: type of pca used, used for identification later on
+        :param n_components: number of PCA components
+        :param subsets: list of subsets to use
+        """
         comps = n_components or self.default_components
 
+        # looks through every datasource that has been loaded
         for key, ds in self.datasources.items():
+            # if the pca_type is full, make sure that it has that
             if pca_type == 'full':
                 pca_name = f'{key}_full'
                 if pca_name not in self.cache:
                     pca_data = self.run_pca(
                         all_data=ds.get_data(), fit_data=ds.get_anchors(),
                         n_components=comps, metadata=ds.get_metadata(), pca_type='full'
-                    )
+                    ) # fits on the anchors only.
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
 
@@ -64,8 +77,16 @@ class PCAManager:
 
     @staticmethod
     def run_pca(pca_type: str, metadata: TrialMetadata, all_data: pd.DataFrame, n_components: int, fit_data: pd.DataFrame=None):
+        """
+        :param pca_type: type of pca used, used for identification later on
+        :param metadata: TrialMetadata object
+        :param all_data: dataframe of all data to be transformed in the PCA model (will also be used to fit if no fit_data is provided)
+        :param n_components: number of PCA components
+        :param fit_data: dataframe of all data used to fit the pca model
+        :return: PCAData object, with the TrialMetadata Object and the transformed data
+        """
         pca_model = PCA(n_components=n_components)
-        if fit_data is not None:
+        if fit_data is not None: # if fit_data is none, just fit the data on all the data!
             pca_model.fit(fit_data)
             pca_result = pca_model.transform(all_data)
         else:
