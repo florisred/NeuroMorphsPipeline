@@ -26,16 +26,16 @@ class PCAManager:
         Adds a datasource to the object for analysis.
         :param data_source: DataSource object to be added
         """
-        key = data_source.data_type
+        key = data_source.get_data_type()
         if key in self.datasources:
             logger.warning(f"Overwriting datasource: {key}")
         self.datasources[key] = data_source
 
-    def prepare_data(self, pca_type: str, n_components: Optional[int] = None, subsets: Optional[List] = None):
+    def prepare_data(self, pca_types: tuple[str], n_components: Optional[int] = None, subsets: Optional[List] = None):
         """
         Ensures the cache contains the requested pca_type for all datasources.
 
-        :param pca_type: type of pca used, used for identification later on
+        :param pca_types: type of pca used, used for identification later on
         :param n_components: number of PCA components
         :param subsets: list of subsets to use
         """
@@ -44,7 +44,7 @@ class PCAManager:
         # looks through every datasource that has been loaded
         for key, ds in self.datasources.items():
             # if the pca_type is full, make sure that it has that
-            if pca_type == 'full':
+            if 'full' in pca_types and not ds.is_split:
                 pca_name = f'{key}_full'
                 if pca_name not in self.cache:
                     pca_data = self.run_pca(
@@ -53,8 +53,25 @@ class PCAManager:
                     ) # fits on the anchors only.
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
+            if 'split_full' in pca_types and ds.is_split:
+                pca_name = f'{key}split'
+                if pca_name not in self.cache:
+                    test_ds = ds.copy()
+                    test_ds.train_test_mask('test')
+                    train_ds = ds.copy()
+                    train_ds.train_test_mask('train')
+                    pca_data = self.run_pca(
+                        all_data=test_ds.get_data(),
+                        fit_data=train_ds.get_anchors(),
+                        n_components=comps,
+                        metadata=test_ds.get_metadata(),
+                        pca_type='split_full',
+                        train_test = '_test'
+                    )
+                    pca_data.set_name(pca_name)
+                    self.cache[pca_name] = pca_data
 
-            elif pca_type == 'subsets':
+            if 'subsets' in pca_types and not ds.is_split:
                 subs = subsets or ds.find_stimulus_cycles(n=3)
                 # Clear old subsets for this key
                 keys_to_drop = [k for k in self.cache.keys() if 'subset' in k and k.startswith(key)]
@@ -71,12 +88,11 @@ class PCAManager:
                         all_data=temp_ds.get_data(), n_components=comps,
                         fit_data=temp_ds.get_anchors(), metadata=temp_ds.get_metadata(), pca_type='subsets'
                     ) # ds for all data, temp_ds for subset data
-                    pca_data.sort()
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
 
     @staticmethod
-    def run_pca(pca_type: str, metadata: TrialMetadata, all_data: pd.DataFrame, n_components: int, fit_data: pd.DataFrame=None):
+    def run_pca(pca_type: str, metadata: TrialMetadata, all_data: pd.DataFrame, n_components: int, fit_data: pd.DataFrame=None, train_test= ''):
         """
         :param pca_type: type of pca used, used for identification later on
         :param metadata: TrialMetadata object
@@ -98,5 +114,5 @@ class PCAManager:
             metadata = metadata,
             pca_type = pca_type
         )
-        pca_data.sort()
+        pca_data.sort(train_test)
         return pca_data
