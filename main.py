@@ -9,9 +9,15 @@ logging.basicConfig(
 if __name__ == "__main__":
 
     nm = Pipeline()
-    nm.load_two_photon(split=False)
-    nm.load_stimuli()
-    nm.create_plots(
-        avg_only=True,
-        n_components=5
-    )
+    nm.load_two_photon(split=True)
+    #nm.load_stimuli()
+
+    #nm.create_pair_plots()
+
+    #nm.create_triplet_plots()
+
+    #nm.create_full_rdm_plots()
+
+    #nm.create_distances_plots()
+
+    #nm.create_interactive_plots()

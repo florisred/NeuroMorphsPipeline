@@ -55,6 +55,12 @@ class Pipeline:
 
         self.analyzer.load_datasource(data_source=two_photon)
 
+        ## testing
+
+        two_photon.filter_transitions(['bark__honeycomb'])
+        two_photon.train_test_mask('train')
+        test = 1
+
     def load_stimuli(self):
 
         stimulus_gabor = StimulusGaborDataSource(
@@ -71,10 +77,19 @@ class Pipeline:
         self.analyzer.load_datasource(data_source=stimulus_pixel)
         self.analyzer.load_datasource(data_source=stimulus_gabor)
 
-    def create_plots(self, n_components = 3, avg_only = True):
-        self.analyzer.create_plots([ 'interactive', 'distances'], output_dir=self.output_dir, n_components=6)
-        self.analyzer.create_plots(
-            plot_types=['rdm'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=2, avg_only = True
-        )
-        self.analyzer.create_plots(plot_types=['subsets', 'rdm'], output_dir=self.output_dir, subsets=self.two_photon_triplets, n_components=2, avg_only=True)
+    def create_full_rdm_plots(self, n_components = 3, avg_only = True):
         self.analyzer.create_plots(plot_types=['rdm_full'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
+
+    def create_interactive_plots(self, n_components = 3, avg_only = True):
+        self.analyzer.create_plots(['interactive'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
+
+    def create_distances_plots(self, n_components = 3, avg_only = True):
+        self.analyzer.create_plots(['distances'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
+
+    def create_pair_plots(self, avg_only = True):
+        self.analyzer.create_plots(
+            plot_types=['rdm', 'subsets'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=2, avg_only=avg_only
+        )
+    def create_triplet_plots(self, avg_only = True):
+        self.analyzer.create_plots(plot_types=['subsets', 'rdm'], output_dir=self.output_dir,
+                                   subsets=self.two_photon_triplets, n_components=3, avg_only=avg_only)
