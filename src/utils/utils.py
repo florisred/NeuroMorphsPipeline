@@ -1,10 +1,17 @@
+from typing import Tuple
+
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import numpy as np
+import numpy.typing as npt
 from collections import Counter
 
 
-def scale_session(X):
+def scale_session(X) -> pd.DataFrame | npt.ArrayLike:
+    """
+    :param X: data to be scaled, either a pandas DataFrame or a numpy array
+    :return: the scaled da ta in the original format
+    """
     scaler = StandardScaler()
     if type(X) == pd.DataFrame:
         return pd.DataFrame(scaler.fit_transform(X), index=X.index, columns=X.columns)
@@ -13,13 +20,16 @@ def scale_session(X):
     else:
         raise TypeError("Please provide a pandas DataFrame or numpy array")
 
-def calc_mean_per_stimulus(data_df, labels):
-    grouped_data = data_df.T.groupby(labels["morph_name"].values).mean()
-    grouped_data_labels = labels.drop_duplicates(subset='morph_name').sort_values(by=['morph_name'])
-    grouped_data.index = grouped_data_labels['morph_name']
-    return grouped_data, grouped_data_labels
-
-def create_name_from_list(transition_list: list, first_part: str ='subset'):
+def create_name_from_list(
+        transition_list: list,
+        first_part: str ='subset'
+) -> str:
+    """
+    Simple helper function to create a name (for the plot) from a transition list with A__B
+    :param transition_list:
+    :param first_part:
+    :return: The name to be used for the subset
+    """
     all_anchs = []
     for trans in transition_list:
         all_anchs.append(trans.split('__'))
@@ -30,9 +40,24 @@ def create_name_from_list(transition_list: list, first_part: str ='subset'):
     return final_name
 
 
-def split_morphs(raw_trials: pd.DataFrame, raw_metadata: pd.DataFrame, train_percent: float = 0.7, seed: int = 42):
+def split_morphs(
+        raw_trials: pd.DataFrame,
+        raw_metadata: pd.DataFrame,
+        train_percent: float = 0.7,
+        seed: int = 42
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+
+    """
+    Splits the trials into train and test sets, and sets their morph name accordingly
+    :param raw_trials: raw trials loaded directly from h5 file
+    :param raw_metadata: metadata after being processed by a TrialMetaData() object, in dataframe format
+    :param train_percent: the percentage of training set
+    :param seed: the seed to use randomizer
+    :return: Tuple[split_trials, split_metadata]
+    """
+
     if not 0 < train_percent <= 1: raise ValueError("test_procent must be between 0 and 1")
-    shuffled_trials, shuffled_metadata, permutation = shuffle(raw_trials, raw_metadata, seed)
+    shuffled_trials, shuffled_metadata = shuffle(raw_trials, raw_metadata, seed)
 
     counts = Counter()
     total_counts = Counter(shuffled_metadata.index)
@@ -53,9 +78,20 @@ def split_morphs(raw_trials: pd.DataFrame, raw_metadata: pd.DataFrame, train_per
 
 
 
-def shuffle(raw_data_df: pd.DataFrame, raw_metadata_df: pd.DataFrame, seed: int = 42):
+def shuffle(
+        raw_data_df: pd.DataFrame,
+        raw_metadata_df: pd.DataFrame,
+        seed: int = 42
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Shuffles the raw data and metadata with a set seed
+    :param raw_data_df: raw trials loaded directly from h5 file
+    :param raw_metadata_df: metadata after being processed by a TrialMetaData() object, in dataframe format
+    :param seed:
+    :return:
+    """
     if len(raw_metadata_df) != len(raw_data_df): raise ValueError("Data and Metadata row counts do not match")
     rng = np.random.default_rng(seed)
     permutation = rng.permutation(len(raw_metadata_df))
-    return raw_data_df.iloc[permutation], raw_metadata_df.iloc[permutation], permutation
+    return raw_data_df.iloc[permutation], raw_metadata_df.iloc[permutation]
 
