@@ -20,7 +20,9 @@ class Analyzer:
         'subsets': subsets_plot.create_subset_plots,
         'rdm': rdm_plot.rdm_analysis,
         'rdm_full': rdm_plot.rdm_analysis_full,
-        'rdm_split_full': rdm_plot.rdm_analysis_full
+        'rdm_split_full': rdm_plot.rdm_analysis_full,
+        'distances_split': distances.calculate_distances
+
     }
     # what type of PCA each plot type requires
     PCA_REQUIREMENTS = {
@@ -30,6 +32,7 @@ class Analyzer:
         'rdm': ['subsets'],
         'rdm_full': ['full'],
         'rdm_split_full': ['full', 'split_full'],
+        'distances_split': ['split_full']
     }
 
     def __init__(self, n_components: int = 3):

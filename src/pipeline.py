@@ -104,3 +104,12 @@ class Pipeline:
             avg_only=True,
             show=show
         )
+
+    def create_split_distances(self, show=False, n_components=3):
+        self.analyzer.create_plots(
+            plot_types=['distances_split'],
+            output_dir=self.output_dir,
+            n_components=n_components,
+            avg_only=True,
+            show=show
+        )

@@ -54,7 +54,7 @@ class PCAManager:
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
             if 'split_full' in pca_types and ds.is_split:
-                pca_name = f'{key}split'
+                pca_name = f'{key}_full'
                 if pca_name not in self.cache:
                     test_ds = ds.copy()
                     test_ds.train_test_mask('test')
