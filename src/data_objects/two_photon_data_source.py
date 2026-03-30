@@ -43,12 +43,15 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
         for data_df in data_dfs:
             filtered_df = data_df[data_df.index.isin(shared_morphs)]
             scaled_session = scale_session(filtered_df)
-            session_mean = scaled_session.groupby('morph_name').mean()
-            processed_dfs.append(session_mean)
+            #session_mean = scaled_session.groupby('morph_name').mean()
+            processed_dfs.append(scaled_session)
             sorted_scaled_session = scaled_session.sort_index()
+            sorted_scaled_session.reset_index(inplace=True, drop=False)
             raw_data_dfs.append(sorted_scaled_session)
         self._raw_data = raw_data_dfs
-        combined_df = pd.concat(processed_dfs, axis=1, join='inner')
+        combined_df = pd.concat(raw_data_dfs, axis=1, join='inner')
+        combined_df = combined_df.loc[:, ~combined_df.columns.duplicated()]
+        combined_df.set_index(keys='morph_name', inplace=True)
         self.metadata.synchronize_with_data(combined_df)
         self._data = combined_df
         logger.info(f"Loaded {len(combined_df)} morphs with {combined_df.shape[1]} neurons")
