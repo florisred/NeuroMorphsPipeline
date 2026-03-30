@@ -80,6 +80,8 @@ class TrialMetadata:
         """
         metadata_lookup = self.metadata_df.drop_duplicates(subset='morph_name')
         self.metadata_df = metadata_lookup.reindex(combined_df.index).rename_axis(index='morph')
+        self.disable_mask()
+        self._update_masked_view()
 
     def get_morph_names(self, as_list: bool = False, ignore_mask: bool = False) -> Union[pd.Series, npt.NDArray]:
         """Returns the morph names, optionally as a list/array."""
