@@ -8,7 +8,7 @@ class StimulusGaborDataSource(DataSource, StimulusMixin):
         super().__init__(file_paths)
         self.gabor_params = gabor_params
         self.output_dir = output_dir
-        self.data_type = 'GaborStimulus'
+        self._data_type = 'GaborStimulus'
 
 
     def load_data(self):
@@ -16,23 +16,23 @@ class StimulusGaborDataSource(DataSource, StimulusMixin):
             image_dir=self.file_paths[0],
             flat=False
         )
-        self.data = self._process_gabor(
+        self._data = self._process_gabor(
             images=images,
             gabor_params=self.gabor_params,
             output_dir = self.output_dir
         )
         metadata = self._process_image_names(images_names)
-        self.metadata.process_and_append(metadata)
-        self.data.index = self.metadata.get_morph_names()
-        self.data = self.data[~self.data.index.duplicated(keep='first')]
-        self.metadata.synchronize_with_data(self.data)
+        self._metadata.process_and_append(metadata)
+        self._data.index = self._metadata.morph_names
+        self._data = self._data[~self.data.index.duplicated(keep='first')]
+        self._metadata.synchronize_with_data(self._data)
 
 
 
 class StimulusPixelWiseDataSource(DataSource, StimulusMixin):
     def __init__(self, file_paths: list[Path]):
         super().__init__(file_paths)
-        self.data_type = 'PixelWiseStimulus'
+        self._data_type = 'PixelWiseStimulus'
 
 
     def load_data(self):
@@ -41,9 +41,9 @@ class StimulusPixelWiseDataSource(DataSource, StimulusMixin):
             flat=True
         )
         metadata = self._process_image_names(images_names)
-        self.metadata.process_and_append(metadata)
-        self.data = pd.DataFrame(images_flat)
-        self.data.index = self.metadata.get_morph_names()
-        self.data = self.data[~self.data.index.duplicated(keep='first')]
-        self.metadata.synchronize_with_data(self.data)
+        self._metadata.process_and_append(metadata)
+        self._data = pd.DataFrame(images_flat)
+        self._data.index = self._metadata.morph_names
+        self._data = self.data[~self._data.index.duplicated(keep='first')]
+        self._metadata.synchronize_with_data(self.data)
 

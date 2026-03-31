@@ -11,7 +11,7 @@ class PCAData:
         self._pca_output = pca_output
         self.metadata = metadata
         self.exlained_variance = explained_variance
-        self._pca_df = pd.DataFrame(pca_output, index=metadata.get_morph_names(), columns = [f'Component{i+1}' for i in range(pca_output.shape[1])])
+        self._pca_df = pd.DataFrame(pca_output, index=metadata.morph_names, columns = [f'Component{i+1}' for i in range(pca_output.shape[1])])
         self._pca_type = pca_type
         self._pca_name = 'pca'
 
@@ -50,7 +50,7 @@ class PCAData:
         return np.arange(len(self.pca_data))
 
     def sort(self, train_test = ""):
-        morph_names = self.metadata.get_morph_names(as_list=True)
+        morph_names = list(self.metadata.morph_names)
         pair_keys =self.metadata.get_pair_keys()
 
         final_sequence = []
@@ -70,4 +70,4 @@ class PCAData:
         new_indices = [name_to_orig_idx[name] for name in final_sequence if name in name_to_orig_idx]
 
         self._grouped_pca_data = self._grouped_pca_data.iloc[new_indices]
-        self.metadata.sort(new_indices, allow_mismatch=True)
+        self.metadata.reindex(new_indices, allow_mismatch=True)

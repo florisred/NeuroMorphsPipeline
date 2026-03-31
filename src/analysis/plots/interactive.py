@@ -19,7 +19,7 @@ def create_interactive_plot(pca_data_dict: dict[str, PCAData], **kwargs):
 
             if num_matches > 0: plot_colors[matches] = np.linspace(0.1, 1.0, num_matches)
 
-            mask_array = metadata.get_anchor_mask()  # self.labels['stim_type'] != 'morph'
+            mask_array = metadata.anchor_mask  # self.labels['stim_type'] != 'morph'
             mask_indices = np.where(mask_array)[0]
             seen_coords = set()
             final_mask_x, final_mask_y, final_mask_z, final_mask_text = [], [], [], []
@@ -30,7 +30,7 @@ def create_interactive_plot(pca_data_dict: dict[str, PCAData], **kwargs):
                     final_mask_x.append(data.iloc[idx, 0])
                     final_mask_y.append(data.iloc[idx, 1])
                     final_mask_z.append(data.iloc[idx, 2])
-                    final_mask_text.append(metadata.get_morph_names().iloc[idx])
+                    final_mask_text.append(metadata.morph_names.iloc[idx])
                     seen_coords.add(coord)
 
             # 3. Create the Figure
@@ -56,7 +56,7 @@ def create_interactive_plot(pca_data_dict: dict[str, PCAData], **kwargs):
                     showscale=True,
                     colorbar=dict(title="Gradient")
                 ),
-                text=metadata.get_morph_names(),
+                text=metadata.morph_names,
                 name='All Images',
                 hoverinfo='text'
             ))

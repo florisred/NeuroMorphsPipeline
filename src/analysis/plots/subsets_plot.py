@@ -25,15 +25,15 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], components: list[int]
         sc = plt.scatter(data.iloc[:, 1], data.iloc[:, 2],
                          c=numeric_index, cmap='viridis', s=60, alpha=0.8,
                          edgecolors='white', zorder=2)
-        is_anchor = metadata.get_anchor_mask()
+        is_anchor = metadata.anchor_mask
         for i in np.where(is_anchor)[0]:
-            name = metadata.get_morph_names().iloc[i]
+            name = metadata.morph_names.iloc[i]
             plt.text(data.iloc[i, 0], data.iloc[i, 1] + 0.5, name, fontsize=10,
                      fontweight='bold', ha='center',
                      bbox=dict(facecolor='white', alpha=0.7, edgecolor='black', boxstyle='round'))
         cbar = plt.colorbar(sc)
         cbar.set_ticks(numeric_index)
-        cbar.set_ticklabels(metadata.get_morph_names())
+        cbar.set_ticklabels(metadata.morph_names)
         plt.xlabel('PC1')
         plt.ylabel('PC2')
         plt.title(f'{pca_data.name} 2D')

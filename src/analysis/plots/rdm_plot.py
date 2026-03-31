@@ -52,7 +52,7 @@ def rdm_analysis(
                 distance_vector = pdist(data.values, metric=dist_metric)
                 rdms[pca_data.name] = distance_vector
                 all_rdms[pca_data.data_source].append(distance_vector)
-                morph_names = pca_data.metadata.get_morph_names()
+                morph_names = pca_data.metadata.morph_names
             stability_matrix = np.zeros((len(names), len(names)))
             for i, n1 in enumerate(names):
                 for j, n2 in enumerate(names):

@@ -18,12 +18,30 @@ class TrialMetadata:
         Args:
             metadata_df: Initial metadata. Defaults to an empty DataFrame.
         """
-        self.metadata_df: pd.DataFrame = metadata_df if metadata_df is not None else pd.DataFrame()
-        self.trial_lens: List[int] = []
+        self._metadata_df: pd.DataFrame = metadata_df if metadata_df is not None else pd.DataFrame()
+        self._trial_lens: List[int] = []
         self._masked_metadata: Optional[pd.DataFrame] = None
         self._use_mask: bool = False
         self._train_mask: Optional[np.ndarray] = None
         self._filter_mask: Optional[np.ndarray] = None
+
+    @property
+    def shared_morphs(self) -> List[str]:
+        """Finds morph names that appear in every recorded session."""
+        morphs_per_session: List[Set[str]] = []
+        start_idx = 0
+
+        # Use full metadata for this to ensure session integrity
+        full_morphs = self._metadata_df['morph_name']
+
+        for length in self._trial_lens:
+            session_morphs = set(full_morphs.iloc[start_idx: start_idx + length].unique())
+            morphs_per_session.append(session_morphs)
+            start_idx += length
+
+        shared = set.intersection(*morphs_per_session) if morphs_per_session else set()
+        return list(shared)
+
 
     def process_and_append(self, raw_trials_metadata_df: pd.DataFrame) -> None:
         """
@@ -70,16 +88,16 @@ class TrialMetadata:
 
     def append(self, df: pd.DataFrame) -> None:
         """Appends a new DataFrame and tracks its length for session splitting."""
-        self.trial_lens.append(df.shape[0])
-        self.metadata_df = pd.concat([self.metadata_df, df])
+        self._trial_lens.append(df.shape[0])
+        self._metadata_df = pd.concat([self._metadata_df, df])
 
     def synchronize_with_data(self, combined_df: pd.DataFrame) -> None:
         """
         Filters metadata to match the indices present in an external DataFrame.
         Useful after dropping trials from neural/behavioral data.
         """
-        metadata_lookup = self.metadata_df.drop_duplicates(subset='morph_name')
-        self.metadata_df = metadata_lookup.reindex(combined_df.index).rename_axis(index='morph')
+        metadata_lookup = self._metadata_df.drop_duplicates(subset='morph_name')
+        self._metadata_df = metadata_lookup.reindex(combined_df.index).rename_axis(index='morph')
         self.disable_mask()
         self._update_masked_view()
 
@@ -89,9 +107,19 @@ class TrialMetadata:
         return data['morph_name'].values if as_list else data['morph_name']
 
     @property
-    def row_num(self) -> int:
-        """Returns current row count (respecting active masks)."""
-        return self.get_metadata().shape[0]
+    def morph_names(self):
+        if self._use_mask:
+            return self.masked_metadata['morph_name']
+        else: return self.all_metadata['morph_name']
+
+    @property
+    def all_metadata(self):
+        return self._metadata_df
+
+    @property
+    def masked_metadata(self):
+        return self._masked_metadata
+
 
     def get_pair_keys(
             self,
@@ -116,22 +144,6 @@ class TrialMetadata:
 
         return pair_keys.values if values else pair_keys
 
-    def get_shared_morphs(self) -> List[str]:
-        """Finds morph names that appear in every recorded session."""
-        morphs_per_session: List[Set[str]] = []
-        start_idx = 0
-
-        # Use full metadata for this to ensure session integrity
-        full_morphs = self.metadata_df['morph_name']
-
-        for length in self.trial_lens:
-            session_morphs = set(full_morphs.iloc[start_idx: start_idx + length].unique())
-            morphs_per_session.append(session_morphs)
-            start_idx += length
-
-        shared = set.intersection(*morphs_per_session) if morphs_per_session else set()
-        return list(shared)
-
     def apply_mask(self, mask: np.ndarray) -> None:
         """Applies a general filter mask (e.g., performance or reaction time)."""
         self._filter_mask = mask
@@ -151,7 +163,7 @@ class TrialMetadata:
             combined_mask = self._train_mask if combined_mask is None else (combined_mask & self._train_mask)
 
         if combined_mask is not None:
-            self._masked_metadata = self.metadata_df[combined_mask]
+            self._masked_metadata = self._metadata_df[combined_mask]
             self._use_mask = True
 
     def disable_mask(self) -> None:
@@ -161,29 +173,26 @@ class TrialMetadata:
         self._use_mask = False
         self._masked_metadata = None
 
-    def get_anchor_mask(self) -> pd.Series:
+    @property
+    def anchor_mask(self) -> pd.Series:
         """Returns a boolean mask where trials are anchors."""
         return self.get_metadata()['stim_type'] == 'anchor'
-
-    def get_anchors(self) -> pd.DataFrame:
-        """Returns all anchor rows."""
-        return self.get_metadata()[self.get_anchor_mask()]
 
     def get_metadata(self, ignore_mask: bool = False) -> pd.DataFrame:
         """Returns either the masked or full metadata DataFrame."""
         if self._use_mask and not ignore_mask:
             return self._masked_metadata
-        return self.metadata_df
+        return self._metadata_df
 
     def shuffle(self, random_state: int = 42) -> None:
         """Randomly shuffles the full metadata."""
-        self.metadata_df = self.metadata_df.sample(frac=1, random_state=random_state)
+        self._metadata_df = self._metadata_df.sample(frac=1, random_state=random_state)
 
-    def sort(self, sorted_idx: Union[List[int], np.ndarray], allow_mismatch: bool = False) -> None:
+    def reindex(self, sorted_idx: Union[List[int], np.ndarray], allow_mismatch: bool = False) -> None:
         """
         Sorts the current view (masked or full) based on provided indices.
         """
-        target_df = self._masked_metadata if self._use_mask else self.metadata_df
+        target_df = self._masked_metadata if self._use_mask else self._metadata_df
 
         if (len(target_df) != len(sorted_idx)) and not allow_mismatch:
             raise ValueError(f"Index length ({len(sorted_idx)}) does not match data length ({len(target_df)})")
@@ -191,7 +200,7 @@ class TrialMetadata:
         if self._use_mask:
             self._masked_metadata = self._masked_metadata.iloc[sorted_idx]
         else:
-            self.metadata_df = self.metadata_df.iloc[sorted_idx]
+            self._metadata_df = self._metadata_df.iloc[sorted_idx]
 
     def find_matching_pair_keys(self, search_term: str) -> Tuple[List[int], int]:
         """
@@ -200,13 +209,6 @@ class TrialMetadata:
         pair_keys = self.get_pair_keys(unique=False, dropna=False, values=True)
         matches = [i for i, pk in enumerate(pair_keys) if search_term in str(pk)]
         return matches, len(matches)
-
-    def set_morph_names(self, morph_names: List[str]) -> None:
-        """Updates the morph_name column and the DataFrame index."""
-        names_array = np.array(morph_names)
-        self.metadata_df = self.metadata_df.set_index(names_array)
-        self.metadata_df['morph_name'] = names_array
-        self.metadata_df.index.name = 'morph'
 
     def copy(self) -> 'TrialMetadata':
         """Returns a deep copy of the current object."""

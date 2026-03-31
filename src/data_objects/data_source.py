@@ -58,7 +58,7 @@ class DataSource(ABC):
         Retrieves the data of all the anchors and returns it
         :return: a DataFrame of the anchor data
         """
-        return self.data[self.metadata.get_anchor_mask]
+        return self.data[self.metadata.anchor_mask]
 
     @property
     def data(self):
