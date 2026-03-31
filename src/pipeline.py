@@ -82,7 +82,7 @@ class Pipeline:
     def create_full_rdm_plots(self, n_components = 3, avg_only = True):
         self.analyzer.create_plots(plot_types=['rdm_full'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
 
-    def create_interactive_plots(self, n_components = 3, avg_only = True):
+    def create_interactive_plots(self, n_components = 10, avg_only = True):
         self.analyzer.create_plots(['interactive'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
 
     def create_distances_plots(self, n_components = 3, avg_only = True):
@@ -94,7 +94,7 @@ class Pipeline:
         )
     def create_triplet_plots(self, avg_only = True):
         self.analyzer.create_plots(plot_types=['subsets', 'rdm'], output_dir=self.output_dir,
-                                   subsets=self.two_photon_triplets, n_components=3, avg_only=avg_only)
+                                   subsets=self.two_photon_triplets, n_components=8, avg_only=avg_only)
 
     def create_split_data_rdm(self, show=False):
         self.analyzer.create_plots(

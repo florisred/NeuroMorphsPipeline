@@ -4,7 +4,7 @@ import numpy as np
 from data_objects.pca_data import PCAData
 
 
-def create_subset_plots(pca_data_dict: dict[str, PCAData], **kwargs):
+def create_subset_plots(pca_data_dict: dict[str, PCAData], components: list[int] = [0, 1], **kwargs):
     output_dir = kwargs.get('output_dir')
     if not output_dir or not isinstance(output_dir, Path): raise ValueError('output_dir not provided')
     output_dir = output_dir / 'subsets'
@@ -20,9 +20,9 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], **kwargs):
 
         plt.figure(figsize=(12.5, 7.5))
         loop_data = np.vstack([data, data.iloc[0]])
-        plt.plot(loop_data[:, 0], loop_data[:, 1],
+        plt.plot(loop_data[:, 1], loop_data[:, 2],
                  color='gray', alpha=0.4, linestyle='--', zorder=1, label='Morph Path')
-        sc = plt.scatter(data.iloc[:, 0], data.iloc[:, 1],
+        sc = plt.scatter(data.iloc[:, 1], data.iloc[:, 2],
                          c=numeric_index, cmap='viridis', s=60, alpha=0.8,
                          edgecolors='white', zorder=2)
         is_anchor = metadata.get_anchor_mask()
