@@ -28,7 +28,7 @@ def rdm_analysis(
     show = kwargs.get('show', False)
 
 
-    subset_groups = {}
+    subset_groups = defaultdict(list)
     all_rdms = defaultdict(list)
     stb_mtcs = []
     sbtr_mtcs = defaultdict(list)
@@ -40,8 +40,7 @@ def rdm_analysis(
         ds_key = t_key.split('_')[0]
         subset_name = t_key[len(ds_key) + 1:]
 
-        if subset_name not in subset_groups:
-            subset_groups[subset_name] = []
+    if subset_name not in subset_groups:
         subset_groups[subset_name].append(pca_data_dict[t_key])
     for subset_name, pca_data_list in subset_groups.items():
         if len(pca_data_list) > 0:
