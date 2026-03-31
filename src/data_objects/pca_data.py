@@ -61,7 +61,9 @@ class PCAData:
             matching_morphs.sort_values(by='norm_step', inplace=True)
             for morph_name in matching_morphs.index:
                 final_sequence.append(morph_name)
-            dst_name = f"{np.unique(matching_morphs['dst_cat'])[0]}_{train_test}"
+            if train_test != '':
+                dst_name = f"{np.unique(matching_morphs['dst_cat'])[0]}_{train_test}"
+            else: dst_name = f"{np.unique(matching_morphs['dst_cat'])[0]}"
             final_sequence.append(dst_name)
 
         name_to_orig_idx = {name: i for i, name in enumerate(morph_names)}
