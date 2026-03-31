@@ -26,7 +26,7 @@ class PCAManager:
         Adds a datasource to the object for analysis.
         :param data_source: DataSource object to be added
         """
-        key = data_source.get_data_type()
+        key = data_source.data_type
         if key in self.datasources:
             logger.warning(f"Overwriting datasource: {key}")
         self.datasources[key] = data_source
@@ -48,8 +48,8 @@ class PCAManager:
                 pca_name = f'{key}_full'
                 if pca_name not in self.cache:
                     pca_data = self.run_pca(
-                        all_data=ds.get_data(), fit_data=ds.get_anchors(),
-                        n_components=comps, metadata=ds.get_metadata(), pca_type='full'
+                        all_data=ds.data, fit_data=ds.anchors,
+                        n_components=comps, metadata=ds.metadata, pca_type='full'
                     ) # fits on the anchors only.
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
@@ -57,14 +57,14 @@ class PCAManager:
                 pca_name = f'{key}_full'
                 if pca_name not in self.cache:
                     test_ds = ds.copy()
-                    test_ds.train_test_mask('test')
+                    test_ds.set_train_test('test')
                     train_ds = ds.copy()
-                    train_ds.train_test_mask('train')
+                    train_ds.set_train_test('train')
                     pca_data = self.run_pca(
-                        all_data=test_ds.get_data(),
-                        fit_data=train_ds.get_anchors(),
+                        all_data=test_ds.data,
+                        fit_data=train_ds.anchors,
                         n_components=comps,
-                        metadata=test_ds.get_metadata(),
+                        metadata=test_ds.metadata,
                         pca_type='split_full',
                         train_test = '_test'
                     )
@@ -85,8 +85,8 @@ class PCAManager:
                     temp_ds.filter_transitions(subset)
 
                     pca_data = self.run_pca(
-                        all_data=temp_ds.get_data(), n_components=comps,
-                        fit_data=temp_ds.get_anchors(), metadata=temp_ds.get_metadata(), pca_type='subsets'
+                        all_data=temp_ds.data, n_components=comps,
+                        fit_data=temp_ds.anchors, metadata=temp_ds.metadata, pca_type='subsets'
                     ) # ds for all data, temp_ds for subset data
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
