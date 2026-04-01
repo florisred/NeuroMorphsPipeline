@@ -31,6 +31,14 @@ class PCAData:
 
 
     @property
+    def anchors(self) -> pd.DataFrame:
+        """
+        Retrieves the data of all the anchors and returns it
+        :return: a DataFrame of the anchor data
+        """
+        return self.pca_data[self.metadata.anchor_mask]
+
+    @property
     def name(self):
         return self._pca_name
     @property
