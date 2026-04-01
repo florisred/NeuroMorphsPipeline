@@ -18,10 +18,13 @@ if __name__ == "__main__":
 
     #nm.create_pair_plots()
 
-    nm.create_triplet_plots( show=True)
+    nm.create_triplet_plots(show=True)
 
     #nm.create_full_rdm_plots()
 
     #nm.create_distances_plots()
 
-    #nm.create_interactive_plots()
+    nm.create_interactive_plots()
+
+
+## ToDO: Implement kfolds

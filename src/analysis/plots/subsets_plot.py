@@ -30,34 +30,26 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData],  **kwargs):
 
         plt.figure(figsize=(12.5, 7.5))
 
-        # 1. Handle looping the data using dynamic components
-        # We extract just the 2 selected columns to make vstacking clean
         plot_coords = data.iloc[:, [pc_x, pc_y]].values
         loop_data = np.vstack([plot_coords, plot_coords[0]])
 
         plt.plot(loop_data[:, 0], loop_data[:, 1],
                  color='gray', alpha=0.4, linestyle='--', zorder=1, label='Morph Path')
 
-        # 2. Scatter plot using dynamic components
         plt.scatter(plot_coords[:, 0], plot_coords[:, 1],
                     c=numeric_index, cmap='viridis', s=60, alpha=0.8,
                     edgecolors='white', zorder=2)
 
-        # 3. Dynamic text placement
         is_anchor = metadata.anchor_mask
         for i in np.where(is_anchor)[0]:
             name = metadata.morph_names.iloc[i]
-            # Coordinates extracted dynamically based on requested components
             plt.text(plot_coords[i, 0], plot_coords[i, 1] + 0.5, name, fontsize=10,
                      fontweight='bold', ha='center',
                      bbox=dict(facecolor='white', alpha=0.7, edgecolor='black', boxstyle='round'))
 
-        # 4. Colorbar and Labels
         cbar = plt.colorbar()
         cbar.set_ticks(numeric_index)
         cbar.set_ticklabels(metadata.morph_names)
-
-        # Dynamic axis labels (PC1, PC2 or PC0, PC1 depending on your naming preference)
         plt.xlabel(f'PC{pc_x + 1}')
         plt.ylabel(f'PC{pc_y + 1}')
         plt.title(f'{pca_data.name} 2D (PC{pc_x + 1} vs PC{pc_y + 1})')
