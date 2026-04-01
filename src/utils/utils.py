@@ -99,17 +99,20 @@ def shuffle(
 
 
 def find_max_separation(pca_data_dict, num_comps) -> list:
-    dist_dict = defaultdict(list)
+    dist_dict = {}
     for name, pca_data in pca_data_dict.items():
+        dist_dict[name] = {}
         anchor_data = pca_data.anchors.drop_duplicates()
         for component_combination in list(combinations(range(anchor_data.shape[1]), num_comps)):
-            anchor_data_filtered_components = anchor_data[component_combination]
+            anchor_data_filtered_components = anchor_data[list(component_combination)]
             all_distances = pdist(anchor_data_filtered_components.values)
             total_separation = all_distances.mean()
-            dist_dict[component_combination].append(total_separation)
-    max_key = None
-    for key in dist_dict.keys():
-        dist_dict[key] = np.mean(dist_dict[key])
-        if max_key is None or dist_dict[key] > dist_dict[max_key]:
-            max_key = key
-    return max_key
+            dist_dict[name][component_combination] = total_separation
+    comp_dict = {}
+    for name, distances in dist_dict.items():
+        max_key = None
+        for key in distances.keys():
+            if max_key is None or distances[key] > distances[max_key]:
+                max_key = key
+        comp_dict[name] = max_key
+    return comp_dict

@@ -92,9 +92,9 @@ class Pipeline:
         self.analyzer.create_plots(
             plot_types=['rdm', 'subsets'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=2, avg_only=avg_only
         )
-    def create_triplet_plots(self, avg_only = True, components_to_use: list[int] = None, show = False):
+    def create_triplet_plots(self, avg_only = True, show = False):
         self.analyzer.create_plots(plot_types=['subsets'], output_dir=self.output_dir,
-                                   subsets=self.two_photon_triplets, n_components=8, avg_only=avg_only, components_to_use=components_to_use, show=show)
+                                   subsets=self.two_photon_triplets, n_components=8, avg_only=avg_only, show=show)
 
     def create_split_data_rdm(self, show=False):
         self.analyzer.create_plots(

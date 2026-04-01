@@ -5,11 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils.utils import find_max_separation
 
-def create_subset_plots(pca_data_dict: dict[str, PCAData], components: Union[list[int], str] = 'auto',  **kwargs):
+def create_subset_plots(pca_data_dict: dict[str, PCAData],  **kwargs):
 
 
-    if components == 'auto' or True:
-        components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=2)
+
+    components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=2)
 
     output_dir = kwargs.get('output_dir')
     if not output_dir or not isinstance(output_dir, Path):
@@ -18,11 +18,11 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], components: Union[lis
     output_dir = output_dir / 'subsets'
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    pc_x, pc_y = components[0], components[1]
-
     for key, pca_data in pca_data_dict.items():
         if 'subset' not in key:
             continue
+
+        pc_x, pc_y = components[key][0], components[key][1]
 
         data = pca_data.pca_data
         metadata = pca_data.metadata
