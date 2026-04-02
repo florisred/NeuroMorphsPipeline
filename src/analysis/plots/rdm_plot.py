@@ -91,22 +91,23 @@ def rdm_analysis(pca_data_dict: dict[str, PCAData], **kwargs):
         avg_rdm = np.mean(value_list, axis=0)
         sqr = squareform(avg_rdm)
         nms = np.arange(sqr.shape[0])
-        _plot_rdm(sqr, nms, f"subtraction_{key}", rdm_output_dir, show=show)
+        _plot_rdm(sqr, nms, f"subtraction_{key}", rdm_output_dir, full_data=full_data, show=show)
 
     # 5. Average and Plot Stability Matrix
     if stb_mtcs:
         # Note: This np.mean assumes all groups had the exact same number of `names`.
         # If subsets have different lengths, this will raise a numpy broadcast error.
         avg_stb_mx = np.mean(stb_mtcs, axis=0)
-        _plot_stability(avg_stb_mx, names, rdm_output_dir, name='stability_avg', show=show)
+        _plot_stability(avg_stb_mx, names, rdm_output_dir, name='stability_avg', show=show, full_data=full_data)
 
 
-def _plot_stability(matrix, labels, output_dir, name, show):
+def _plot_stability(matrix, labels, output_dir, name, show, full_data):
     plt.figure(figsize=(12, 10))
     sns.heatmap(matrix, annot=True, fmt=".2f", cmap='viridis',
                 xticklabels=labels, yticklabels=labels, square=True)
     plt.xticks(rotation=45, ha='right')
     plt.yticks(rotation=0)
+    if full_data: name.append(f"full")
     plt.title(f"Representational Stability ({name})", pad=20, fontsize=15)
     plt.tight_layout()
     plt.savefig(output_dir / f"{name}.png")
@@ -114,7 +115,8 @@ def _plot_stability(matrix, labels, output_dir, name, show):
     plt.close()  # Critical: Prevent memory leaks
 
 
-def _plot_rdm(matrix, labels, name, output_dir, show):
+def _plot_rdm(matrix, labels, name, output_dir, show, full_data):
+    if full_data: name.append(f"full")
     scale_factor = max(10, len(labels) * 0.3)
     plt.figure(figsize=(scale_factor, scale_factor))
     ax = sns.heatmap(matrix, xticklabels=labels, yticklabels=labels,
