@@ -9,18 +9,24 @@ logging.basicConfig(
 if __name__ == "__main__":
 
     nm = Pipeline()
-    nm.load_two_photon(split=True)
     nm.load_two_photon(split=False)
-    nm.create_split_data_rdm(show=True)
+    #nm.load_two_photon(split=True)
+    #nm.create_split_data_rdm(show=True)
+    #nm.create_split_distances(show=True,n_components=20)
 
-    #nm.load_stimuli()
+    nm.load_stimuli()
 
     #nm.create_pair_plots()
 
-    #nm.create_triplet_plots()
+    #nm.create_triplet_plots(show=True)
 
-    #nm.create_full_rdm_plots()
+    nm.create_full_rdm_plots(n_components=3)
 
-    #nm.create_distances_plots()
+    nm.create_rdm_plots(n_components=3)
 
-    #nm.create_interactive_plots()
+    nm.create_distances_plots()
+
+    nm.create_interactive_plots()
+
+
+## ToDO: Implement kfolds

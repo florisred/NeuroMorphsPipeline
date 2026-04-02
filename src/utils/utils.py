@@ -1,10 +1,12 @@
+from itertools import combinations
 from typing import Tuple
 
+from scipy.spatial.distance import pdist
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import numpy as np
 import numpy.typing as npt
-from collections import Counter
+from collections import Counter, defaultdict
 
 
 def scale_session(X) -> pd.DataFrame | npt.ArrayLike:
@@ -95,3 +97,22 @@ def shuffle(
     permutation = rng.permutation(len(raw_metadata_df))
     return raw_data_df.iloc[permutation], raw_metadata_df.iloc[permutation]
 
+
+def find_max_separation(pca_data_dict, num_comps) -> list:
+    dist_dict = {}
+    for name, pca_data in pca_data_dict.items():
+        dist_dict[name] = {}
+        anchor_data = pca_data.anchors.drop_duplicates()
+        for component_combination in list(combinations(range(anchor_data.shape[1]), num_comps)):
+            anchor_data_filtered_components = anchor_data[list(component_combination)]
+            all_distances = pdist(anchor_data_filtered_components.values)
+            total_separation = all_distances.mean()
+            dist_dict[name][component_combination] = total_separation
+    comp_dict = {}
+    for name, distances in dist_dict.items():
+        max_key = None
+        for key in distances.keys():
+            if max_key is None or distances[key] > distances[max_key]:
+                max_key = key
+        comp_dict[name] = max_key
+    return comp_dict

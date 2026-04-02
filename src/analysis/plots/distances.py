@@ -21,7 +21,7 @@ def calculate_distances(pca_data_dict: dict[str, PCAData], **kwargs):
 
         for stem in name_stems:
             mask = pair_keys == stem
-            morph_names = metadata.get_morph_names().copy()
+            morph_names = metadata.morph_names.copy()
             anchor_names = stem.split('__')
             seen = {
                 anchor_names[0]: False,

@@ -7,13 +7,16 @@ import copy
 import re
 
 class PCAData:
-    def __init__(self, pca_type: str, pca_output: npt.NDArray, metadata: TrialMetadata, explained_variance: npt.NDArray = None):
+    def __init__(self, pca_type: str, pca_output: npt.NDArray, metadata: TrialMetadata, morph_names: pd.Index, explained_variance: npt.NDArray = None):
         self._pca_output = pca_output
         self.metadata = metadata
         self.exlained_variance = explained_variance
-        self._pca_df = pd.DataFrame(pca_output, index=metadata.get_morph_names(), columns = [f'Component{i+1}' for i in range(pca_output.shape[1])])
+        self._pca_df = pd.DataFrame(pca_output, index=metadata.morph_names, columns = [f'Component{i+1}' for i in range(pca_output.shape[1])])
         self._pca_type = pca_type
         self._pca_name = 'pca'
+
+        self._grouped_pca_data = pd.DataFrame(pca_output, index=morph_names).groupby('morph_name').mean()
+
 
     def copy(self):
         return copy.deepcopy(self)
@@ -28,6 +31,14 @@ class PCAData:
 
 
     @property
+    def anchors(self) -> pd.DataFrame:
+        """
+        Retrieves the data of all the anchors and returns it
+        :return: a DataFrame of the anchor data
+        """
+        return self.pca_data[self.metadata.anchor_mask]
+
+    @property
     def name(self):
         return self._pca_name
     @property
@@ -35,19 +46,19 @@ class PCAData:
         return self.metadata.get_metadata()
     @property
     def pca_data(self) -> pd.DataFrame:
-        return self._pca_df
+        return self._grouped_pca_data
     @property
     def pca_type(self) -> str:
         return self._pca_type
 
     def get_data_components(self, n_components: int):
-        return self._pca_df.iloc[:, :n_components]
+        return self._grouped_pca_data.iloc[:, :n_components]
 
     def get_numeric_index(self):
         return np.arange(len(self.pca_data))
 
     def sort(self, train_test = ""):
-        morph_names = self.metadata.get_morph_names(as_list=True)
+        morph_names = list(self.metadata.morph_names)
         pair_keys =self.metadata.get_pair_keys()
 
         final_sequence = []
@@ -58,13 +69,13 @@ class PCAData:
             matching_morphs.sort_values(by='norm_step', inplace=True)
             for morph_name in matching_morphs.index:
                 final_sequence.append(morph_name)
-            dst_name = f"{np.unique(matching_morphs['dst_cat'])[0]}_{train_test}"
+            if train_test != '':
+                dst_name = f"{np.unique(matching_morphs['dst_cat'])[0]}_{train_test}"
+            else: dst_name = f"{np.unique(matching_morphs['dst_cat'])[0]}"
             final_sequence.append(dst_name)
 
         name_to_orig_idx = {name: i for i, name in enumerate(morph_names)}
-
-
         new_indices = [name_to_orig_idx[name] for name in final_sequence if name in name_to_orig_idx]
 
-        self._pca_df = self._pca_df.iloc[new_indices]
-        self.metadata.sort(new_indices, allow_mismatch=True)
+        self._grouped_pca_data = self._grouped_pca_data.iloc[new_indices]
+        self.metadata.reindex(new_indices, allow_mismatch=True)
