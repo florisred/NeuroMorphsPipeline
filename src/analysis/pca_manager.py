@@ -103,9 +103,16 @@ class PCAManager:
         """
         pca_model = PCA(n_components=n_components)
         if fit_data is not None: # if fit_data is none, just fit the data on all the data!
+            if min(fit_data.shape) < n_components:
+                pca_model = PCA(n_components=min(fit_data.shape))
+                logger.warning(f"PCA fitting with {n_components} PCA components is not possible. Using {min(fit_data.shape)} instead.")
             pca_model.fit(fit_data)
             pca_result = pca_model.transform(all_data)
         else:
+            if min(all_data.shape) < n_components:
+                pca_model = PCA(n_components=min(all_data.shape))
+                logger.warning(
+                    f"PCA fitting with {n_components} PCA components is not possible. Using {min(all_data.shape)} instead.")
             pca_result = pca_model.fit_transform(all_data)
         explained_variance = pca_model.explained_variance_ratio_
         pca_data = PCAData(
