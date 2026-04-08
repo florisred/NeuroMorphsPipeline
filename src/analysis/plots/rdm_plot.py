@@ -115,7 +115,7 @@ def _plot_stability(matrix, labels, output_dir, name, show, full_data):
     plt.close()  # Critical: Prevent memory leaks
 
 
-def _plot_rdm(matrix, labels, name, output_dir, show, full_data):
+def _plot_rdm(matrix, labels, name, output_dir, show, full_data=False):
     if full_data: name.append(f"full")
     scale_factor = max(10, len(labels) * 0.3)
     plt.figure(figsize=(scale_factor, scale_factor))
