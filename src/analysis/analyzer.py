@@ -27,7 +27,7 @@ class Analyzer:
     # what type of PCA each plot type requires
     PCA_REQUIREMENTS = {
         'interactive': ['full'],
-        'distances': ['full'],
+        'distances': ['pairs'],
         'subsets': ['subsets'],
         'rdm': ['subsets'],
         'rdm_full': ['full'],
