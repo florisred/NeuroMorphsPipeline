@@ -90,6 +90,26 @@ class PCAManager:
                     ) # ds for all data, temp_ds for subset data
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
+            if 'pairs' in pca_types and not ds.is_split:
+                subs = subsets or ds.find_stimulus_cycles(n=2)
+                # Clear old subsets for this key
+                keys_to_drop = [k for k in self.cache.keys() if 'subset' in k and k.startswith(key)]
+                for k in keys_to_drop: self.cache.pop(k)
+
+                for subset in subs:
+                    pca_name = f'{key}_{create_name_from_list(subset)}'
+                    if pca_name in self.cache: continue
+
+                    temp_ds = ds.copy()
+                    temp_ds.filter_transitions(subset)
+
+                    pca_data = self.run_pca(
+                        all_data=temp_ds.data, n_components=comps,
+                        fit_data=temp_ds.anchors, metadata=temp_ds.metadata, pca_type='subsets'
+                    )  # ds for all data, temp_ds for subset data
+                    pca_data.set_name(pca_name)
+                    self.cache[pca_name] = pca_data
+
 
     @staticmethod
     def run_pca(pca_type: str, metadata: TrialMetadata, all_data: pd.DataFrame, n_components: int, fit_data: pd.DataFrame=None, train_test= ''):
