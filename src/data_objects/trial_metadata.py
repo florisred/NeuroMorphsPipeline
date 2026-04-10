@@ -144,6 +144,13 @@ class TrialMetadata:
 
         return pair_keys.values if values else pair_keys
 
+    @property
+    def morph_steps(self) -> pd.DataFrame:
+        df = self.get_metadata()['norm_step']
+        df.iloc[0] = 0
+        df.iloc[-1] = 1
+        return df
+
     def apply_mask(self, mask: np.ndarray) -> None:
         """Applies a general filter mask (e.g., performance or reaction time)."""
         self._filter_mask = mask

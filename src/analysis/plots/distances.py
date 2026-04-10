@@ -2,6 +2,7 @@ from collections import defaultdict
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from scipy.spatial.distance import pdist, squareform
 
 from data_objects.pca_data import PCAData
@@ -12,6 +13,7 @@ def calculate_distances(pca_data_dict: dict[str, PCAData], **kwargs):
     if not output_dir or not isinstance(output_dir, Path): raise ValueError('output_dir not provided')
     output_dir = output_dir / 'distances'
     output_dir.mkdir(parents=True, exist_ok=True)
+    x = None
 
     all_distances = defaultdict(list)
     all_distances_cum = defaultdict(list)
@@ -29,12 +31,16 @@ def calculate_distances(pca_data_dict: dict[str, PCAData], **kwargs):
         scaled_distances = [dis / distances[-1] for dis in distances]
         all_distances[data_source].append(scaled_distances)
         all_distances_cum[data_source].append(scaled_distances_cum)
+        if x is None:
+            x = pca_data.metadata.morph_steps
+
 
     for data_source in all_distances.keys():
         mean_distance = np.mean(all_distances[data_source], axis=0)
         sem_distance = np.std(all_distances[data_source], axis=0)
         mean_distance_cum = np.mean(all_distances_cum[data_source], axis=0)
         sem_distance_cum = np.std(all_distances_cum[data_source], axis=0)
+
 
     # Plot 1: Mean Distances
         plt.figure(figsize=(10, 7.5))
@@ -54,10 +60,10 @@ def calculate_distances(pca_data_dict: dict[str, PCAData], **kwargs):
 
         # Plot 2: Cumulative Mean Distances
         plt.figure(figsize=(10, 7.5))
-        plt.plot(mean_distance_cum, label='Mean Cumulative', color='green')
+        plt.plot(x, mean_distance_cum, label='Mean Cumulative', color='green')
         # Adding the SEM/STD ribbon
         plt.fill_between(
-            range(len(mean_distance_cum)),
+            x,
             mean_distance_cum - sem_distance_cum,
             mean_distance_cum + sem_distance_cum,
             color='green', alpha=0.2

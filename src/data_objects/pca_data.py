@@ -25,6 +25,10 @@ class PCAData:
         self._pca_name = name
 
     @property
+    def trial_data(self) -> pd.DataFrame:
+        return self._pca_df
+
+    @property
     def data_source(self):
         try: return self.name.split('_')[0]
         except: return 'unknown'
