@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     #nm.create_pair_plots()
 
-    #nm.create_triplet_plots(show=True)
+    #nm.create_triplet_plots(show=True, with_variability=True)
 
     #nm.create_full_rdm_plots(n_components=3)
 

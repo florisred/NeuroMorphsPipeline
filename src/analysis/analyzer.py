@@ -50,7 +50,8 @@ class Analyzer:
             avg_only: bool = False,
             remove_prev: bool = True,
             show: bool = False,
-            components_to_use: list[int] = None
+            components_to_use: list[int] = None,
+            with_variability: bool = False,
     ):
         params = {k: v for k, v in locals().items() if k != 'self'}
 
