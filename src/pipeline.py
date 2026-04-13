@@ -45,7 +45,7 @@ class Pipeline:
 
 
 
-    def load_two_photon(self, split:bool = False):
+    def load_two_photon(self, split:bool = False, train_percent = 0.7):
         """
         Loads the two photon data into a DataSource Object, retrieves the location from the config file
         :param split: Boolean to indicate whether to split the data into train and test categories
@@ -55,7 +55,7 @@ class Pipeline:
             file_paths=self.session_dirs,
             data_location=self.settings["PSEUDOPOP_DATA"]
         )
-        two_photon.load_data(split=split)
+        two_photon.load_data(split=split, train_percent=train_percent)
         self.two_photon_triplets = two_photon.find_stimulus_cycles(n=3) # finds possible triplets for the graphs later on
         two_photon_pairs = two_photon.metadata.get_pair_keys(unique=True, dropna=True) # finds all pairs for the graphs
         self.two_photon_pairs = [[pair] for pair in two_photon_pairs]
@@ -116,4 +116,7 @@ class Pipeline:
             avg_only=True,
             show=show
         )
+
+    def classify(self,):
+        self.analyzer.classify()
 

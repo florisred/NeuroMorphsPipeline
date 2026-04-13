@@ -5,6 +5,7 @@ from typing import List, Tuple, Optional, Union
 from data_objects.data_source import DataSource
 from analysis.pca_manager import PCAManager
 from analysis.plots import distances, interactive, rdm_plot, subsets_plot  # Import our new standalone plots module
+from analysis.classification.classify import  classify as classify_data
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,8 @@ class Analyzer:
         'rdm': rdm_plot.rdm_analysis,
         'rdm_full': rdm_plot.rdm_analysis_full,
         'rdm_split_full': rdm_plot.rdm_analysis_full,
-        'distances_split': distances.calculate_distances
+        'distances_split': distances.calculate_distances,
+        'classification': classify_data
 
     }
     # what type of PCA each plot type requires
@@ -32,7 +34,8 @@ class Analyzer:
         'rdm': ['subsets'],
         'rdm_full': ['full'],
         'rdm_split_full': ['full', 'split_full'],
-        'distances_split': ['split_full']
+        'distances_split': ['split_full'],
+        'classification': ['split_full']
     }
 
     def __init__(self, n_components: int = 3):
@@ -40,6 +43,10 @@ class Analyzer:
 
     def load_datasource(self, data_source: DataSource):
         self.pca_manager.add_datasource(data_source)
+
+    def classify(self):
+        classify_data(self.pca_manager.datasources)
+
 
     def create_plots(
             self,

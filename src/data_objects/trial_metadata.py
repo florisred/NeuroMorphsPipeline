@@ -77,6 +77,8 @@ class TrialMetadata:
         df['morph_name'] = np.where(is_src, df['src_cat'],
                                     np.where(is_dst, df['dst_cat'], partial_names))
 
+        df['nearest_anchor'] = np.where((df['norm_step'] < 0.5), df['src_cat'], df['dst_cat'])
+
         # Clean up Anchor data (Anchors usually don't belong to a morphing pair)
         anchor_mask = df['stim_type'] == 'anchor'
         cols_to_null = ['pair_key', 'src_cat', 'dst_cat', 'step_index', 'norm_step']
@@ -147,8 +149,6 @@ class TrialMetadata:
     @property
     def morph_steps(self) -> pd.DataFrame:
         df = self.get_metadata()['norm_step']
-        df.iloc[0] = 0
-        df.iloc[-1] = 1
         return df
 
     def apply_mask(self, mask: np.ndarray) -> None:
@@ -220,3 +220,8 @@ class TrialMetadata:
     def copy(self) -> 'TrialMetadata':
         """Returns a deep copy of the current object."""
         return copy.deepcopy(self)
+
+    @property
+    def nearest_anchor(self):
+        return self.get_metadata()['nearest_anchor']
+

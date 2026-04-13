@@ -33,6 +33,8 @@ def calculate_distances(pca_data_dict: dict[str, PCAData], **kwargs):
         all_distances_cum[data_source].append(scaled_distances_cum)
         if x is None:
             x = pca_data.metadata.morph_steps
+            x.iloc[0] = 0
+            x.iloc[-1] = 1
 
 
     for data_source in all_distances.keys():

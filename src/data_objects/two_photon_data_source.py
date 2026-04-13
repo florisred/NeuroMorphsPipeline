@@ -22,7 +22,7 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
         self._labels_list = ['pair_key', 'step_index', 'src_cat', 'dst_cat']
         self._data_type = 'TwoPhoton'
 
-    def load_data(self, split: bool = False, seed: int = 42):
+    def load_data(self, split: bool = False, seed: int = 42, train_percent = 0.7):
         """
         Loads the .h5 data from each session and loads them in the metadata file.
         Then, it isolates shared morphs across sessions and interpolates repetitions
@@ -38,7 +38,7 @@ class TwoPhotonDataSource(DataSource, TwoPhotonMixIn):
             temp_meta_df = temp_meta._metadata_df
             raw_data_df.index = raw_morph_names
             if split: raw_data_df, temp_meta_df = split_morphs(raw_trials=raw_data_df, raw_metadata=temp_meta_df,
-                                                               seed=seed)
+                                                               seed=seed, train_percent=train_percent)
             data_dfs.append(raw_data_df)
             self._metadata.append(temp_meta_df)
 
