@@ -107,7 +107,7 @@ def _plot_stability(matrix, labels, output_dir, name, show, full_data):
                 xticklabels=labels, yticklabels=labels, square=True)
     plt.xticks(rotation=45, ha='right')
     plt.yticks(rotation=0)
-    if full_data: name.append(f"full")
+    if full_data: name = name + (f"full")
     plt.title(f"Representational Stability ({name})", pad=20, fontsize=15)
     plt.tight_layout()
     plt.savefig(output_dir / f"{name}.png")
@@ -116,7 +116,7 @@ def _plot_stability(matrix, labels, output_dir, name, show, full_data):
 
 
 def _plot_rdm(matrix, labels, name, output_dir, show, full_data=False):
-    if full_data: name.append(f"full")
+    if full_data: name = name + (f"full")
     scale_factor = max(10, len(labels) * 0.3)
     plt.figure(figsize=(scale_factor, scale_factor))
     ax = sns.heatmap(matrix, xticklabels=labels, yticklabels=labels,

@@ -1,16 +1,15 @@
-from typing import Union
 from data_objects.pca_data import PCAData
 from pathlib import Path
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from utils.utils import find_max_separation
+import pandas as pd
 
 
 def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=False, **kwargs):
-    components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=2)
 
+    components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=2)
     output_dir = kwargs.get('output_dir')
     if not output_dir or not isinstance(output_dir, Path):
         raise ValueError('output_dir not provided or not a Path object')
@@ -21,6 +20,12 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
     for key, pca_data in pca_data_dict.items():
         if 'subset' not in key:
             continue
+
+
+        curvature_stats = calculate_curvature(pca_data)
+        print(f'Curvature stats for {pca_data.name}:')
+        for stat, value in curvature_stats.items():
+            print(f'{stat}: {value}')
 
         pc_x, pc_y = components[key][0], components[key][1]
 
@@ -110,3 +115,42 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
         plt.grid(True, linestyle=':', alpha=0.6)
         plt.savefig(output_dir / f'{pca_data.name}.png')
         plt.close()
+
+
+def calculate_curvature(triplet_pca_data: PCAData):
+
+    data = triplet_pca_data.pca_data
+    anchors = triplet_pca_data.anchors
+    anchors_unique = anchors.drop_duplicates()
+    metadata = triplet_pca_data.metadata
+
+    ideal_data = []
+    for pair_key in triplet_pca_data.metadata.get_pair_keys(unique=True):
+        pair_key_mask = metadata.get_pair_keys(unique=False, dropna=False) == pair_key
+        src_cat = np.unique(metadata.get_metadata()['src_cat'][pair_key_mask])
+        dst_cat = np.unique(metadata.get_metadata()['dst_cat'][pair_key_mask])
+        if len(src_cat) != 1 or len(dst_cat) != 1:
+            raise ValueError(f'Multiple src_cat or dst_cat values for pair_key {pair_key}')
+        src_cat, dst_cat = src_cat[0], dst_cat[0]
+        p0 = anchors_unique.loc[src_cat]
+        p1 = anchors_unique.loc[dst_cat]
+        vector = p1 - p0
+        norm_steps = metadata.morph_steps.loc[pair_key_mask]
+        ideal_data.append(p0)
+        for norm_step in norm_steps:
+            ideal_data.append(p0 + norm_step * vector)
+        ideal_data.append(p1)
+    ideal_df = pd.DataFrame(ideal_data, index=data.index, columns=data.columns)
+    residuals = ideal_df - data
+    distances = np.linalg.norm(residuals, axis=1)
+    return {
+        "mean_curvature": np.mean(distances),
+        "median_curvature": np.median(distances),
+        "total_rmse": np.sqrt(np.mean(distances ** 2)),
+        "per_point_deviation": pd.Series(distances, index=data.index)
+    }
+
+
+
+
+
