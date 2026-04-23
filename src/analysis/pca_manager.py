@@ -4,6 +4,7 @@ from data_objects.data_source import DataSource
 from utils.utils import create_name_from_list
 import pandas as pd
 from sklearn.decomposition import PCA
+from sklearn.manifold import LocallyLinearEmbedding
 from data_objects.trial_metadata import TrialMetadata
 from data_objects.pca_data import PCAData
 logger = logging.getLogger(__name__)
@@ -134,7 +135,7 @@ class PCAManager:
                 logger.warning(
                     f"PCA fitting with {n_components} PCA components is not possible. Using {min(all_data.shape)} instead.")
             pca_result = pca_model.fit_transform(all_data)
-        explained_variance = pca_model.explained_variance_ratio_
+        explained_variance = None#pca_model.explained_variance_ratio_
         pca_data = PCAData(
             pca_output = pca_result,
             explained_variance = explained_variance,

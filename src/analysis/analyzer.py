@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Union
 
 from data_objects.data_source import DataSource
 from analysis.pca_manager import PCAManager
-from analysis.plots import distances, interactive, rdm_plot, subsets_plot  # Import our new standalone plots module
+from analysis.plots import distances, interactive, rdm_plot, subsets_plot, explained_variance  # Import our new standalone plots module
 from analysis.classification.classify import  classify as classify_data
 
 logger = logging.getLogger(__name__)
@@ -23,8 +23,9 @@ class Analyzer:
         'rdm_full': rdm_plot.rdm_analysis_full,
         'rdm_split_full': rdm_plot.rdm_analysis_full,
         'distances_split': distances.calculate_distances,
-        'classification': classify_data
-
+        'classification': classify_data,
+        'explained_variance_full': explained_variance.plot_variance,
+        'explained_variance_subsets': explained_variance.plot_variance
     }
     # what type of PCA each plot type requires
     PCA_REQUIREMENTS = {
@@ -35,7 +36,9 @@ class Analyzer:
         'rdm_full': ['full'],
         'rdm_split_full': ['full', 'split_full'],
         'distances_split': ['split_full'],
-        'classification': ['split_full']
+        'classification': ['split_full'],
+        'explained_variance_full': ['full'],
+        'explained_variance_subsets': ['subsets'],
     }
 
     def __init__(self, n_components: int = 3):
@@ -46,7 +49,6 @@ class Analyzer:
 
     def classify(self):
         classify_data(self.pca_manager.datasources)
-
 
     def create_plots(
             self,

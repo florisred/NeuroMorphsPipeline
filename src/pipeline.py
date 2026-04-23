@@ -1,10 +1,12 @@
 from pathlib import Path
 from warnings import warn
+
+from analysis.plots import explained_variance
 from scripts.generate_config import generate_config
 import json
 from data_objects.two_photon_data_source import TwoPhotonDataSource
 from analysis.analyzer import Analyzer
-from data_objects.stimulus_data_source import StimulusGaborDataSource, StimulusPixelWiseDataSource
+from data_objects.stimulus_data_source import StimulusGaborDataSource, StimulusPixelWiseDataSource, DistributedGaborDataSource
 
 class Pipeline:
     """
@@ -44,7 +46,6 @@ class Pipeline:
         self.analyzer = Analyzer()
 
 
-
     def load_two_photon(self, split:bool = False, train_percent = 0.7):
         """
         Loads the two photon data into a DataSource Object, retrieves the location from the config file
@@ -62,24 +63,32 @@ class Pipeline:
         self.two_photon_pairs = [[pair] for pair in two_photon_pairs]
         self.analyzer.load_datasource(data_source=two_photon) # loads the datasource into the Analyzer() object
 
-    def load_stimuli(self):
+    def load_stimuli(self, n_neurons=500):
         """
         Loads the stimulus data into a DataSource Object, retrieves the location from the config file
         """
         self.test()
+        distributed_gabor = DistributedGaborDataSource(
+            file_paths=[self.data_dir / 'stimuli'],
+            gabor_params = self.settings["gabor_params"],
+            output_dir= self.data_dir / 'output',
+        )
+        distributed_gabor.load_data(n_neurons=n_neurons)
         stimulus_gabor = StimulusGaborDataSource(
             file_paths=[self.data_dir / 'stimuli'],
             gabor_params = self.settings["gabor_params"],
             output_dir= self.data_dir / 'output',
         )
         stimulus_gabor.load_data()
-        stimulus_pixel = StimulusPixelWiseDataSource(
-            file_paths=[self.data_dir / 'stimuli'],
-        )
-        stimulus_pixel.load_data()
+        # stimulus_pixel = StimulusPixelWiseDataSource(
+        #     file_paths=[self.data_dir / 'stimuli'],
+        # )
+        # stimulus_pixel.load_data()
 
-        self.analyzer.load_datasource(data_source=stimulus_pixel)
+        #self.analyzer.load_datasource(data_source=stimulus_pixel)
         self.analyzer.load_datasource(data_source=stimulus_gabor)
+        self.analyzer.load_datasource(data_source=distributed_gabor)
+        test=1
 
     def create_full_rdm_plots(self, n_components = 3, avg_only = True):
         self.test()
@@ -90,7 +99,7 @@ class Pipeline:
 
         self.analyzer.create_plots(plot_types=['rdm'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
 
-    def create_interactive_plots(self, n_components = 10, avg_only = True):
+    def create_interactive_plots(self, n_components = 3, avg_only = True):
         self.test()
 
         self.analyzer.create_plots(['interactive'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
@@ -104,7 +113,7 @@ class Pipeline:
         self.test()
 
         self.analyzer.create_plots(
-            plot_types=['subsets'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=8, avg_only=avg_only
+            plot_types=['subsets'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=3, avg_only=avg_only
         )
     def create_triplet_plots(self, avg_only = True, show = False, with_variability = False, n_components = 3):
         self.analyzer.create_plots(plot_types=['subsets'], output_dir=self.output_dir,
@@ -130,6 +139,13 @@ class Pipeline:
 
     def classify(self,):
         self.analyzer.classify()
+
+    def show_explained_variance(self):
+        self.analyzer.create_plots(
+            plot_types=['explained_variance_full'],
+            output_dir=self.output_dir,
+            n_components=20,
+        )
 
 
     def test(self):
