@@ -13,7 +13,7 @@ if __name__ == "__main__":
     #nm.load_two_photon(split=True, train_percent = 0.3)
     # nm.create_split_data_rdm(show=True)
     # nm.create_split_distances(show=True,n_components=20)
-    nm.load_stimuli(n_neurons=5612)
+    nm.load_stimuli(n_neurons=500)
 
     #nm.show_explained_variance()
 
@@ -27,11 +27,11 @@ if __name__ == "__main__":
     #
     # #
     nm.create_rdm_plots(n_components=3)
-    # #
-    nm.create_distances_plots()
-    # #
-    nm.create_interactive_plots()
     #
+    nm.create_distances_plots()
+    #
+    nm.create_interactive_plots()
+
     nm.create_full_rdm_plots(n_components=3)
 
 

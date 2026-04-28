@@ -48,15 +48,24 @@ class StimulusPixelWiseDataSource(DataSource, StimulusMixin):
         self._metadata.synchronize_with_data(self.data)
 
 class DistributedGaborDataSource(DataSource, StimulusMixin):
-    def __init__(self, file_paths: list[Path], gabor_params: dict, output_dir: Path):
+    def __init__(self, file_paths: list[Path], rf_dstr_path: Path, gabor_params: dict, output_dir: Path):
         super().__init__(file_paths)
+        self.rf_dstr_path = rf_dstr_path
         self.gabor_params = gabor_params
         self.output_dir = output_dir
         self._data_type = 'DistributedGaborStimulus'
 
     def load_data(self, n_neurons=500, n_trials = 7):
+        rf_dst_file = self.rf_dstr_path / 'rf_dstr.csv'
+        rf_dstr = pd.read_csv(rf_dst_file)['RF_size_px']
+        rf_int = rf_dstr.astype(int)
+
+
+
+
         gabor_params = self.gabor_params
         gabor_params['n_neurons'] = n_neurons
+        gabor_params['receptive_field_sizes'] = rf_int.to_list()
         images, images_names = self._load_images(
             image_dir=self.file_paths[0],
             flat=False

@@ -113,8 +113,8 @@ class StimulusMixin:
         gamma = gabor_params["gamma"]
         receptive_field_sizes = gabor_params["receptive_field_sizes"]
         n_neurons = gabor_params["n_neurons"]
-        fano_factor = 1.2
-        sensor_noise_std = 0.05
+        fano_factor = 2
+        sensor_noise_std = 0.15
 
         neuron_param_dict = {}
         for i in range(n_neurons):
@@ -122,8 +122,10 @@ class StimulusMixin:
             neuron_param_dict[i]["orientation"] = random.choice(orientations)
             neuron_param_dict[i]["wavelength"] = random.choice(wavelengths)
             neuron_param_dict[i]["gamma"] = gamma
-            receptive_field_size = random.choice(receptive_field_sizes)
-            img_shape = images[0].shape
+            while True:
+                receptive_field_size = random.choice(receptive_field_sizes) * 2
+                img_shape = images[0].shape
+                if receptive_field_size < min(img_shape) / 2: break
             while True:
                 receptive_field_location = (np.random.randint(0, img_shape[0]), np.random.randint(0, img_shape[1]))
                 x1 = receptive_field_location[0] - receptive_field_size // 2
@@ -162,15 +164,26 @@ class StimulusMixin:
                 base_activation = np.mean(magnitude)
 
                 for trial in range(n_trials):
-                    # 1. Apply Poisson-like variability
-                    # We scale by fano_factor to control "cleanliness"
-                    trial_activation = np.random.poisson(base_activation * 100) / 100.0
+                    # 1. Apply Fano Factor controlled variability
+                    # For a Poisson process, Var = Mean. To get Var = F * Mean:
+                    # We scale the input mean down by F, then scale the output up by F.
+                    mu = base_activation * 100  # Your scaling factor
+
+                    if mu > 0:
+                        # Scale the mean for the poisson generator
+                        scaled_mu = mu / fano_factor
+                        # Generate and scale back up
+                        trial_activation = np.random.poisson(scaled_mu) * fano_factor
+                    else:
+                        trial_activation = 0.0
+
+                    trial_activation /= 100.0  # Return to original scale
 
                     # 2. Add Gaussian "Instrument" noise
                     noise = np.random.normal(0, sensor_noise_std)
 
-                    # 3. Final value (rectified to ensure no negative firing)
-                    final_feature_matrix[img_num_after_noise+trial, j] = max(0, trial_activation + noise)
+                    # 3. Final value (rectified)
+                    final_feature_matrix[img_num_after_noise + trial, j] = max(0, trial_activation + noise)
 
 
             # 3. Scale and Save

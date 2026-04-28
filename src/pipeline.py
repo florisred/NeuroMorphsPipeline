@@ -40,7 +40,7 @@ class Pipeline:
 
 
         self.data_dir = Path(self.settings["DATA_FOLDER"])
-        self.session_dirs = [dire for dire in self.data_dir.iterdir() if dire.name not in ["output", "stimuli"] and not dire.name.startswith(".")]
+        self.session_dirs = [dire for dire in self.data_dir.iterdir() if dire.name not in ["output", "stimuli", 'rfsizes'] and not dire.name.startswith(".")]
         self.output_dir = self.data_dir / "output" / 'plots'
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.analyzer = Analyzer()
@@ -70,6 +70,7 @@ class Pipeline:
         self.test()
         distributed_gabor = DistributedGaborDataSource(
             file_paths=[self.data_dir / 'stimuli'],
+            rf_dstr_path = self.data_dir / 'rfsizes',
             gabor_params = self.settings["gabor_params"],
             output_dir= self.data_dir / 'output',
         )
