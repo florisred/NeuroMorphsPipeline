@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from data_objects.pca_data import PCAData
 from pathlib import Path
 import numpy as np
@@ -17,16 +19,26 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
     output_dir = output_dir / 'subsets'
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    curve_dict = defaultdict(dict)
+
     for key, pca_data in pca_data_dict.items():
         if 'subset' not in key:
             continue
 
-
-        curvature_stats = calculate_curvature(pca_data)
-        print(f'Curvature stats for {pca_data.name}:')
-        for stat, value in curvature_stats.items():
-            print(f'{stat}: {value}')
-
+        data_source_name = pca_data.data_source
+        if curve_dict[data_source_name] == {}:
+            curve_dict[data_source_name] = {
+                'mean_curvature': [],
+                'median_curvature': [],
+                'total_rmse': [],
+                'per_point_deviation': []
+            }
+        normalized_pca_data = pca_data.copy()
+        normalized_pca_data.normalize()
+        curve_stats = calculate_curvature(normalized_pca_data)
+        # curve_stats['per_point_deviation'] = np.mean(curve_stats['per_point_deviation'], axis=1)
+        for key2, item in curve_stats.items():
+            curve_dict[data_source_name][key2].append(item)
         pc_x, pc_y = components[key][0], components[key][1]
 
         data = pca_data.pca_data
@@ -116,6 +128,23 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
         plt.savefig(output_dir / f'{pca_data.name}.png')
         plt.close()
 
+    mean_curve_data = {}
+    plt.figure(figsize=(12.5, 7.5))
+
+    for data_source_name, curve_stats in curve_dict.items():
+        mean_curves = np.mean(curve_dict[data_source_name]['mean_curvature'], axis=0)
+        median_curves = np.mean(curve_dict[data_source_name]['median_curvature'], axis=0)
+        rmses = np.mean(curve_dict[data_source_name]['total_rmse'], axis=0)
+        per_point_deviations = np.mean(curve_dict[data_source_name]['per_point_deviation'], axis=0)
+        mean_curve_data[data_source_name] = [mean_curves, median_curves, rmses, per_point_deviations]
+        plt.plot(per_point_deviations, label=data_source_name)
+    print(mean_curve_data.items())
+    plt.legend()
+    plt.savefig(output_dir / 'mean_curves.png')
+    plt.show()
+
+
+    test=1
 
 def calculate_curvature(triplet_pca_data: PCAData):
 

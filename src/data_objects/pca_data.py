@@ -14,8 +14,17 @@ class PCAData:
         self._pca_df = pd.DataFrame(pca_output, index=metadata.morph_names, columns = [f'Component{i+1}' for i in range(pca_output.shape[1])])
         self._pca_type = pca_type
         self._pca_name = 'pca'
-
         self._grouped_pca_data = pd.DataFrame(pca_output, index=morph_names).groupby('morph_name').mean()
+        self._normalized = False
+
+
+    @property
+    def normalized(self):
+        return self._normalized
+
+    def normalize(self):
+        self._normalized = True
+
 
 
     def copy(self):
@@ -26,7 +35,8 @@ class PCAData:
 
     @property
     def trial_data(self) -> pd.DataFrame:
-        return self._pca_df
+        if self._normalized: return (self._pca_df - self._pca_df.mean()) / self._pca_df.std()
+        else: return self._pca_df
 
     @property
     def data_source(self):
@@ -50,13 +60,14 @@ class PCAData:
         return self.metadata.get_metadata()
     @property
     def pca_data(self) -> pd.DataFrame:
+        if self._normalized: return (self._grouped_pca_data - self._grouped_pca_data.mean()) / self._grouped_pca_data.std()
         return self._grouped_pca_data
     @property
     def pca_type(self) -> str:
         return self._pca_type
 
     def get_data_components(self, n_components: int):
-        return self._grouped_pca_data.iloc[:, :n_components]
+        return self.pca_data.iloc[:, :n_components]
 
     def get_numeric_index(self):
         return np.arange(len(self.pca_data))

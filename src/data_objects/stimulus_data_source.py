@@ -61,8 +61,6 @@ class DistributedGaborDataSource(DataSource, StimulusMixin):
         rf_int = rf_dstr.astype(int)
 
 
-
-
         gabor_params = self.gabor_params
         gabor_params['n_neurons'] = n_neurons
         gabor_params['receptive_field_sizes'] = rf_int.to_list()
