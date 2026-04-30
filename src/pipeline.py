@@ -1,7 +1,5 @@
 from pathlib import Path
 from warnings import warn
-
-from analysis.plots import explained_variance
 from scripts.generate_config import generate_config
 import json
 from data_objects.two_photon_data_source import TwoPhotonDataSource
@@ -81,15 +79,15 @@ class Pipeline:
             output_dir= self.data_dir / 'output',
         )
         stimulus_gabor.load_data()
-        # stimulus_pixel = StimulusPixelWiseDataSource(
-        #     file_paths=[self.data_dir / 'stimuli'],
-        # )
-        # stimulus_pixel.load_data()
+        stimulus_pixel = StimulusPixelWiseDataSource(
+            file_paths=[self.data_dir / 'stimuli'],
+        )
+        stimulus_pixel.load_data()
 
-        #self.analyzer.load_datasource(data_source=stimulus_pixel)
+        self.analyzer.load_datasource(data_source=stimulus_pixel)
         self.analyzer.load_datasource(data_source=stimulus_gabor)
         self.analyzer.load_datasource(data_source=distributed_gabor)
-        test=1
+
 
     def create_full_rdm_plots(self, n_components = 3, avg_only = True):
         self.test()
