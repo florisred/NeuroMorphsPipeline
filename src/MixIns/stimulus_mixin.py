@@ -113,8 +113,8 @@ class StimulusMixin:
         gamma = gabor_params["gamma"]
         receptive_field_sizes = gabor_params["receptive_field_sizes"]
         n_neurons = gabor_params["n_neurons"]
-        fano_factor = 2
-        sensor_noise_std = 0.15
+        fano_factor = 8
+        sensor_noise_std = 0.50
 
         neuron_param_dict = {}
         for i in range(n_neurons):
@@ -192,9 +192,3 @@ class StimulusMixin:
         np.save(gabor_save_file, normalized_features)
 
         return pd.DataFrame(normalized_features)
-
-        teset=1
-
-
-        ## for each neuron, take only the receptive field
-        # calculate the gabor values for that ne
