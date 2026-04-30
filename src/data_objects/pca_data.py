@@ -25,7 +25,9 @@ class PCAData:
     def normalize(self):
         self._normalized = True
 
-
+    @property
+    def n_unique_anchors(self):
+        return len(np.unique(self.anchors))
 
     def copy(self):
         return copy.deepcopy(self)
