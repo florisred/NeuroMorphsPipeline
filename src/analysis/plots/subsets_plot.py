@@ -21,6 +21,7 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
 
     curve_dict = defaultdict(dict)
 
+
     for key, pca_data in pca_data_dict.items():
         if 'subset' not in key:
             continue
@@ -136,25 +137,28 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
         median_curves = np.mean(curve_dict[data_source_name]['median_curvature'], axis=0)
         rmses = np.mean(curve_dict[data_source_name]['total_rmse'], axis=0)
         per_point_deviations = np.mean(curve_dict[data_source_name]['per_point_deviation'], axis=0)
+        std_per_point_deviations = np.std(curve_dict[data_source_name]['per_point_deviation'], axis=0)
         mean_curve_data[data_source_name] = [mean_curves, median_curves, rmses, per_point_deviations]
         plt.plot(per_point_deviations, label=data_source_name)
-    print(mean_curve_data.items())
+        plt.fill_between(
+            per_point_deviations - std_per_point_deviations,
+            per_point_deviations + std_per_point_deviations,
+            color='green', alpha=0.2
+        )
     plt.legend()
     plt.savefig(output_dir / 'mean_curves.png')
     plt.show()
 
+def calculate_curvature(pca_data: PCAData):
 
-    test=1
-
-def calculate_curvature(triplet_pca_data: PCAData):
-
-    data = triplet_pca_data.pca_data
-    anchors = triplet_pca_data.anchors
+    data = pca_data.pca_data
+    anchors = pca_data.anchors
     anchors_unique = anchors.drop_duplicates()
-    metadata = triplet_pca_data.metadata
+    metadata = pca_data.metadata
+    n_subsets = pca_data.n_unique_anchors
 
     ideal_data = []
-    for pair_key in triplet_pca_data.metadata.get_pair_keys(unique=True):
+    for pair_key in pca_data.metadata.get_pair_keys(unique=True):
         pair_key_mask = metadata.get_pair_keys(unique=False, dropna=False) == pair_key
         src_cat = np.unique(metadata.get_metadata()['src_cat'][pair_key_mask])
         dst_cat = np.unique(metadata.get_metadata()['dst_cat'][pair_key_mask])
@@ -172,12 +176,18 @@ def calculate_curvature(triplet_pca_data: PCAData):
     ideal_df = pd.DataFrame(ideal_data, index=data.index, columns=data.columns)
     residuals = ideal_df - data
     distances = np.linalg.norm(residuals, axis=1)
+
+    ppd = pd.Series(distances, index=data.index)
+    folded_ppd = pd.DataFrame(ppd.values.reshape(n_subsets, len(ppd) / n_subsets)).mean(axis=0)
+
+
     return {
         "mean_curvature": np.mean(distances),
         "median_curvature": np.median(distances),
         "total_rmse": np.sqrt(np.mean(distances ** 2)),
-        "per_point_deviation": pd.Series(distances, index=data.index)
+        "per_point_deviation": folded_ppd
     }
+
 
 
 
