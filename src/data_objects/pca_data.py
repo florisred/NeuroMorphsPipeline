@@ -10,7 +10,7 @@ class PCAData:
     def __init__(self, pca_type: str, pca_output: npt.NDArray, metadata: TrialMetadata, morph_names: pd.Index, explained_variance: npt.NDArray = None):
         self._pca_output = pca_output
         self.metadata = metadata
-        self.exlained_variance = explained_variance
+        self.explained_variance = explained_variance
         self._pca_df = pd.DataFrame(pca_output, index=metadata.morph_names, columns = [f'Component{i+1}' for i in range(pca_output.shape[1])])
         self._pca_type = pca_type
         self._pca_name = 'pca'
