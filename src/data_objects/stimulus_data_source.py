@@ -1,9 +1,9 @@
 from data_objects.data_source import DataSource
-from MixIns.stimulus_mixin import StimulusMixin
 from pathlib import Path
 import pandas as pd
+from src.utils.utils import create_distributed_gabor, process_image_names, process_gabor, load_images
 
-class StimulusGaborDataSource(DataSource, StimulusMixin):
+class StimulusGaborDataSource(DataSource):
     def __init__(self, file_paths: list[Path], gabor_params: dict, output_dir: Path):
         super().__init__(file_paths)
         self.gabor_params = gabor_params
@@ -12,16 +12,16 @@ class StimulusGaborDataSource(DataSource, StimulusMixin):
 
 
     def load_data(self):
-        images, images_names = self._load_images(
+        images, images_names = load_images(
             image_dir=self.file_paths[0],
             flat=False
         )
-        self._data = self._process_gabor(
+        self._data = process_gabor(
             images=images,
             gabor_params=self.gabor_params,
             output_dir = self.output_dir
         )
-        metadata = self._process_image_names(images_names)
+        metadata = process_image_names(images_names)
         self._metadata.process_and_append(metadata)
         self._data.index = self._metadata.morph_names
         self._data = self._data[~self.data.index.duplicated(keep='first')]
@@ -29,25 +29,25 @@ class StimulusGaborDataSource(DataSource, StimulusMixin):
 
 
 
-class StimulusPixelWiseDataSource(DataSource, StimulusMixin):
+class StimulusPixelWiseDataSource(DataSource):
     def __init__(self, file_paths: list[Path]):
         super().__init__(file_paths)
         self._data_type = 'PixelWiseStimulus'
 
 
     def load_data(self):
-        images_flat, images_names = self._load_images(
+        images_flat, images_names = load_images(
             image_dir=self.file_paths[0],
             flat=True
         )
-        metadata = self._process_image_names(images_names)
+        metadata = process_image_names(images_names)
         self._metadata.process_and_append(metadata)
         self._data = pd.DataFrame(images_flat)
         self._data.index = self._metadata.morph_names
         self._data = self.data[~self._data.index.duplicated(keep='first')]
         self._metadata.synchronize_with_data(self.data)
 
-class DistributedGaborDataSource(DataSource, StimulusMixin):
+class DistributedGaborDataSource(DataSource):
     def __init__(self, file_paths: list[Path], rf_dstr_path: Path, gabor_params: dict, output_dir: Path):
         super().__init__(file_paths)
         self.rf_dstr_path = rf_dstr_path
@@ -64,7 +64,7 @@ class DistributedGaborDataSource(DataSource, StimulusMixin):
         gabor_params = self.gabor_params
         gabor_params['n_neurons'] = n_neurons
         gabor_params['receptive_field_sizes'] = rf_int.to_list()
-        images, images_names = self._load_images(
+        images, images_names = load_images(
             image_dir=self.file_paths[0],
             flat=False
         )
@@ -72,8 +72,8 @@ class DistributedGaborDataSource(DataSource, StimulusMixin):
         for i_n, img in zip(images_names, images):
             for i in range(n_trials):
                 images_names_duplicated.append(i_n)
-        self._data = self._process_distributed_gabor(images, gabor_params, self.output_dir, n_trials=7)
-        metadata = self._process_image_names(images_names_duplicated)
+        self._data = create_distributed_gabor(images, gabor_params, self.output_dir, n_trials=7)
+        metadata = process_image_names(images_names_duplicated)
 
         self._metadata.process_and_append(metadata)
 
