@@ -31,8 +31,7 @@ def rdm_analysis(pca_data_dict: dict[str, PCAData], **kwargs):
     analysis_groups = defaultdict(list)
 
     for t_key, pca_data in pca_data_dict.items():
-        pca_data_normalized = pca_data.copy()
-        pca_data_normalized.normalize()
+        pca_data_normalized = pca_data.normalize()
         if full_data:
             if 'subset' in t_key: continue
             analysis_groups['full_dataset'].append(pca_data_normalized)

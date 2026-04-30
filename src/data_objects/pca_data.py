@@ -22,8 +22,14 @@ class PCAData:
     def normalized(self):
         return self._normalized
 
-    def normalize(self):
-        self._normalized = True
+    def normalize(self, inplace=False) -> None | PCAData:
+        if inplace:
+            self._normalized = True
+            return None
+        else:
+            cp = self.copy()
+            cp._normalized = True
+            return cp
 
     @property
     def n_unique_anchors(self):
