@@ -94,6 +94,7 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
         std_per_point_deviation = np.std(ppd, axis=0)
         plt.plot(per_point_deviation, label=data_source_name)
         plt.fill_between(
+            range(len(per_point_deviation)),
             per_point_deviation - std_per_point_deviation,
             per_point_deviation + std_per_point_deviation,
             color='green', alpha=0.2
