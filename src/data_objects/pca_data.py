@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import copy
 
-import re
 
 class PCAData:
     def __init__(self, pca_type: str, pca_output: npt.NDArray, metadata: TrialMetadata, morph_names: pd.Index, explained_variance: npt.NDArray = None):
