@@ -10,9 +10,11 @@ import pandas as pd
 
 
 def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=False, **kwargs):
-
+    calculate_deviation(pca_data_dict, source='TwoPhoton')
     components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=2)
     output_dir = kwargs.get('output_dir')
+    curve_metrics_only = kwargs.get('curve_metrics_only', False)
+
     if not output_dir or not isinstance(output_dir, Path):
         raise ValueError('output_dir not provided or not a Path object')
     output_dir = output_dir / 'subsets'
@@ -29,64 +31,66 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
             ppd_dict[data_source_name] = folded_ppd
         else:
             ppd_dict[data_source_name] = pd.concat([ppd_dict[data_source_name], folded_ppd])
-        pc_x, pc_y = components[key][0], components[key][1]
-        data = pca_data.pca_data
-        metadata = pca_data.metadata
-        numeric_index = pca_data.get_numeric_index()
-        plt.figure(figsize=(12.5, 7.5))
-        ax = plt.gca()
-        plot_coords = data.iloc[:, [pc_x, pc_y]].values
-        loop_data = np.vstack([plot_coords, plot_coords[0]])
-        plt.plot(loop_data[:, 0], loop_data[:, 1],
-                 color='gray', alpha=0.4, linestyle='--', zorder=1, label='Morph Path')
-        if with_variability and hasattr(pca_data, 'trial_data') and pca_data.trial_data is not None:
-            cmap = plt.get_cmap('viridis')
-            norm = plt.Normalize(vmin=np.min(numeric_index), vmax=np.max(numeric_index))
-            for i, name in enumerate(metadata.morph_names):
-                try:
-                    morph_trials = pca_data.trial_data.loc[name]
-                    if isinstance(morph_trials, pd.Series):
-                        trial_coords = morph_trials.iloc[[pc_x, pc_y]].values.reshape(1, -1)
-                    else:
-                        trial_coords = morph_trials.iloc[:, [pc_x, pc_y]].values
-                    color = cmap(norm(numeric_index[i]))
-                    plt.scatter(trial_coords[:, 0], trial_coords[:, 1],
-                                color=color, s=20, alpha=0.3, zorder=1, edgecolors='none')
-                    if len(trial_coords) >= 2:
-                        cov = np.cov(trial_coords[:, 0], trial_coords[:, 1])
-                        if cov.ndim == 2:
-                            eigenvalues, eigenvectors = np.linalg.eigh(cov)
-                            order = eigenvalues.argsort()[::-1]
-                            eigenvalues = eigenvalues[order]
-                            eigenvectors = eigenvectors[:, order]
-                            angle = np.degrees(np.arctan2(*eigenvectors[:, 0][::-1]))
-                            n_std = 1
-                            width, height = 2 * n_std * np.sqrt(np.maximum(eigenvalues, 0))
-                            ell = Ellipse(xy=(np.mean(trial_coords[:, 0]), np.mean(trial_coords[:, 1])),
-                                          width=width, height=height, angle=angle,
-                                          facecolor=color, alpha=0.15, edgecolor=color,
-                                          linewidth=1.5, zorder=1)
-                            ax.add_patch(ell)
-                except KeyError:
-                    pass
-        plt.scatter(plot_coords[:, 0], plot_coords[:, 1],
-                    c=numeric_index, cmap='viridis', s=60, alpha=0.8,
-                    edgecolors='white', zorder=2)
-        is_anchor = metadata.anchor_mask
-        for i in np.where(is_anchor)[0]:
-            name = metadata.morph_names.iloc[i]
-            plt.text(plot_coords[i, 0], plot_coords[i, 1] + 0.5, name, fontsize=10,
-                     fontweight='bold', ha='center',
-                     bbox=dict(facecolor='white', alpha=0.7, edgecolor='black', boxstyle='round'))
-        cbar = plt.colorbar()
-        cbar.set_ticks(numeric_index)
-        cbar.set_ticklabels(metadata.morph_names)
-        plt.xlabel(f'PC{pc_x + 1}')
-        plt.ylabel(f'PC{pc_y + 1}')
-        plt.title(f'{pca_data.name} 2D (PC{pc_x + 1} vs PC{pc_y + 1})')
-        plt.grid(True, linestyle=':', alpha=0.6)
-        plt.savefig(output_dir / f'{pca_data.name}.png')
-        plt.close()
+        if not curve_metrics_only:
+            pc_x, pc_y = components[key][0], components[key][1]
+            data = pca_data.pca_data
+            metadata = pca_data.metadata
+            numeric_index = pca_data.get_numeric_index()
+            plt.figure(figsize=(12.5, 7.5))
+            ax = plt.gca()
+            plot_coords = data.iloc[:, [pc_x, pc_y]].values
+            loop_data = np.vstack([plot_coords, plot_coords[0]])
+            plt.plot(loop_data[:, 0], loop_data[:, 1],
+                     color='gray', alpha=0.4, linestyle='--', zorder=1, label='Morph Path')
+            if with_variability and hasattr(pca_data, 'trial_data') and pca_data.trial_data is not None:
+                cmap = plt.get_cmap('viridis')
+                norm = plt.Normalize(vmin=np.min(numeric_index), vmax=np.max(numeric_index))
+                for i, name in enumerate(metadata.morph_names):
+                    try:
+                        morph_trials = pca_data.trial_data.loc[name]
+                        if isinstance(morph_trials, pd.Series):
+                            trial_coords = morph_trials.iloc[[pc_x, pc_y]].values.reshape(1, -1)
+                        else:
+                            trial_coords = morph_trials.iloc[:, [pc_x, pc_y]].values
+                        color = cmap(norm(numeric_index[i]))
+                        plt.scatter(trial_coords[:, 0], trial_coords[:, 1],
+                                    color=color, s=20, alpha=0.3, zorder=1, edgecolors='none')
+                        if len(trial_coords) >= 2:
+                            cov = np.cov(trial_coords[:, 0], trial_coords[:, 1])
+                            if cov.ndim == 2:
+                                eigenvalues, eigenvectors = np.linalg.eigh(cov)
+                                order = eigenvalues.argsort()[::-1]
+                                eigenvalues = eigenvalues[order]
+                                eigenvectors = eigenvectors[:, order]
+                                angle = np.degrees(np.arctan2(*eigenvectors[:, 0][::-1]))
+                                n_std = 1
+                                width, height = 2 * n_std * np.sqrt(np.maximum(eigenvalues, 0))
+                                ell = Ellipse(xy=(np.mean(trial_coords[:, 0]), np.mean(trial_coords[:, 1])),
+                                              width=width, height=height, angle=angle,
+                                              facecolor=color, alpha=0.15, edgecolor=color,
+                                              linewidth=1.5, zorder=1)
+                                ax.add_patch(ell)
+                    except KeyError:
+                        pass
+            plt.scatter(plot_coords[:, 0], plot_coords[:, 1],
+                        c=numeric_index, cmap='viridis', s=60, alpha=0.8,
+                        edgecolors='white', zorder=2)
+            is_anchor = metadata.anchor_mask
+            for i in np.where(is_anchor)[0]:
+                name = metadata.morph_names.iloc[i]
+                plt.text(plot_coords[i, 0], plot_coords[i, 1] + 0.5, name, fontsize=10,
+                         fontweight='bold', ha='center',
+                         bbox=dict(facecolor='white', alpha=0.7, edgecolor='black', boxstyle='round'))
+            cbar = plt.colorbar()
+            cbar.set_ticks(numeric_index)
+            cbar.set_ticklabels(metadata.morph_names)
+            plt.xlabel(f'PC{pc_x + 1}')
+            plt.ylabel(f'PC{pc_y + 1}')
+            plt.title(f'{pca_data.name} 2D (PC{pc_x + 1} vs PC{pc_y + 1})')
+            plt.grid(True, linestyle=':', alpha=0.6)
+            plt.savefig(output_dir / f'{pca_data.name}.png')
+            plt.close()
+
     mean_curve_data = {}
     plt.figure(figsize=(12.5, 7.5))
     for data_source_name, ppd in ppd_dict.items():
@@ -102,6 +106,21 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
     plt.legend()
     plt.savefig(output_dir / 'mean_curves.png')
     plt.show()
+
+    plt.figure(figsize=(12.5, 7.5))
+    baseline_source = kwargs.get('baseline_source', 'TwoPhoton')
+    baseline_deviation = np.mean(ppd_dict[baseline_source], axis=0)
+    for data_source_name, ppd in ppd_dict.items():
+        if data_source_name == baseline_source: continue
+        per_point_deviation = np.mean(ppd, axis=0)
+        residuals = baseline_deviation - per_point_deviation
+        residuals = np.abs(residuals)
+        mean_residuals = np.mean(residuals)
+        plt.bar(data_source_name, mean_residuals)
+    plt.legend()
+    plt.title('mean difference from 2p')
+    plt.show()
+
 
 def calculate_curvature(pca_data: PCAData):
     data = pca_data.pca_data
@@ -126,6 +145,7 @@ def calculate_curvature(pca_data: PCAData):
             ideal_data.append(p0 + norm_step * vector)
         ideal_data.append(p1)
     ideal_df = pd.DataFrame(ideal_data, index=data.index, columns=data.columns)
+
     residuals = ideal_df - data
     distances = np.linalg.norm(residuals, axis=1)
     ppd = pd.Series(distances, index=data.index)
@@ -134,6 +154,19 @@ def calculate_curvature(pca_data: PCAData):
     except Exception as e:
         raise ValueError(f'Something went wrong while trying to slice the subsets together: {e}')
     return folded_ppd
+
+def calculate_deviation(pca_data_dict: dict[str, PCAData], source='TwoPhoton'):
+
+    devs = defaultdict(list)
+    for key, pca_data in pca_data_dict.items():
+        data_source = pca_data.data_source
+        subset = key[len(data_source):]
+        baseline = pca_data_dict[source+subset].pca_data
+        devs[data_source].append(np.linalg.norm(baseline -pca_data.pca_data, axis=1))
+    print(devs)
+    test=1
+
+
 
 
 

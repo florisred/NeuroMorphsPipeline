@@ -9,27 +9,27 @@ logging.basicConfig(
 if __name__ == "__main__":
 
     nm = Pipeline()
+
     nm.load_two_photon(split=False)
-    #nm.load_two_photon(split=True, train_percent = 0.3)
-    # nm.create_split_data_rdm(show=True)
-    # nm.create_split_distances(show=True,n_components=20)
-    nm.load_stimuli(n_neurons=5612)
 
-    #nm.show_explained_variance()
+    nm.load_different_dst_gabors(n=5, rf_sizes_list=[[5,10], [10,20], [20,30], [30,40], [40,50]])
 
-    nm.classify()
-    #
-    #
-    #nm.create_pair_plots()
-    #
-    nm.create_triplet_plots(show=True, with_variability=True)
-    #
-    #
-    # #
-    nm.create_rdm_plots(n_components=3)
-    #
-    nm.create_distances_plots()
-    #
-    nm.create_interactive_plots()
+    #nm.load_stimuli(n_neurons=5612)
 
-    nm.create_full_rdm_plots(n_components=3)
+    #nm.classify()
+
+    nm.create_triplet_plots(show=True, with_variability=True, curve_metrics_only = True)
+
+    #nm.create_rdm_plots(n_components=3)
+
+    #nm.create_distances_plots()
+
+    #nm.create_interactive_plots()
+
+    #nm.create_full_rdm_plots(n_components=3)
+
+    ## ToDO:
+
+    # maak op de x-as de RF-size,  y-as de curve metric op plaats 4
+    # maak een deviation van de 2-p metric
+    

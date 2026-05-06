@@ -158,6 +158,14 @@ class DataSource(ABC):
         self._metadata.apply_train_mask(self._train_mask)
         self._use_mask = True
 
+    def update_data_source(self, name: str, append:bool=True):
+        if append:
+            prev_nm = self.data_type
+            self._data_type = prev_nm + name
+        else:
+            self._data_type = name
+
+
 
 
 

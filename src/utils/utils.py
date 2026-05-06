@@ -102,7 +102,7 @@ def shuffle(
     return raw_data_df.iloc[permutation], raw_metadata_df.iloc[permutation]
 
 
-def find_max_separation(pca_data_dict, num_comps) -> list:
+def find_max_separation(pca_data_dict, num_comps):
     dist_dict = {}
     for name, pca_data in pca_data_dict.items():
         dist_dict[name] = {}
@@ -121,11 +121,12 @@ def find_max_separation(pca_data_dict, num_comps) -> list:
         comp_dict[name] = max_key
     return comp_dict
 
- def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir: Path, n_trials = 7) -> pd.DataFrame:
-        gabor_save_file = output_dir / "gabor_distributed_normalized_features_stimuli.npy"
-        if Path.exists(gabor_save_file):
-            print("Gabor Feature matrix already exists. Loading...")
-            return pd.DataFrame(np.load(gabor_save_file))
+def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir: Path, n_trials = 7, save_and_load=True) -> pd.DataFrame:
+        if save_and_load:
+            gabor_save_file = output_dir / "gabor_distributed_normalized_features_stimuli.npy"
+            if Path.exists(gabor_save_file):
+                print("Gabor Feature matrix already exists. Loading...")
+                return pd.DataFrame(np.load(gabor_save_file))
         wavelengths = gabor_params["wavelengths"]
         orientations = gabor_params["orientations"]
         gamma = gabor_params["gamma"]
@@ -186,7 +187,8 @@ def find_max_separation(pca_data_dict, num_comps) -> list:
                     final_feature_matrix[img_num_after_noise + trial, j] = max(0, trial_activation + noise)
         print("Scaling and saving features...")
         normalized_features = scale_session(final_feature_matrix)
-        np.save(gabor_save_file, normalized_features)
+        if save_and_load:
+            np.save(gabor_save_file, normalized_features)
 
         return pd.DataFrame(normalized_features)
 

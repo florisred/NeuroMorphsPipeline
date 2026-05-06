@@ -61,6 +61,7 @@ class Analyzer:
             show: bool = False,
             components_to_use: list[int] = None,
             with_variability: bool = False,
+            curve_metrics_only: bool = False,
     ):
         params = {k: v for k, v in locals().items() if k != 'self'}
 
