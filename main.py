@@ -79,13 +79,13 @@ if __name__ == "__main__":
 
     nm.load_two_photon(split=False)
 
-    nm.load_different_dst_gabors(n=5)#, rf_sizes_list=[[5,10], [10,20], [20,30], [30,40], [40,50]])
+    #nm.load_different_dst_gabors(n=5)#, rf_sizes_list=[[5,10], [10,20], [20,30], [30,40], [40,50]])
 
     nm.load_stimuli(n_neurons=5612)
 
     #nm.classify()
 
-    nm.create_triplet_plots(show=True, with_variability=True, curve_metrics_only = True)
+    nm.create_triplet_plots(show=True, with_variability=True, curve_metrics_only = False)
 
     #nm.create_rdm_plots(n_components=3)
 
@@ -95,4 +95,4 @@ if __name__ == "__main__":
 
     #nm.create_full_rdm_plots(n_components=3)
 
-# ToDO: Hoe ver het allemaal van het midden afzit 
+# ToDO: Hoe ver het allemaal van het midden afzit

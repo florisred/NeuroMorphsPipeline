@@ -132,8 +132,8 @@ def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir
         gamma = gabor_params["gamma"]
         receptive_field_sizes = gabor_params["receptive_field_sizes"]
         n_neurons = gabor_params["n_neurons"]
-        fano_factor = 8
-        sensor_noise_std = 0.50
+        fano_factor = 20
+        sensor_noise_std = 2
         neuron_param_dict = {}
         for i in range(n_neurons):
             neuron_param_dict[i] = {}

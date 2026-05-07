@@ -27,7 +27,7 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
         data_source_name = pca_data.data_source
         normalized_pca_data = pca_data.normalize()
         if normalized_pca_data is None: raise ValueError('Expected PCAData object, but got NoneType instead')
-        folded_ppd = calculate_curvature(normalized_pca_data)
+        folded_ppd = calculate_curvature(normalized_pca_data, components = components[key])
         if ppd_dict.get(data_source_name) is None:
             ppd_dict[data_source_name] = folded_ppd
         else:
@@ -92,7 +92,6 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
             plt.savefig(output_dir / f'{pca_data.name}.png')
             plt.close()
 
-    mean_curve_data = {}
     plt.figure(figsize=(12.5, 7.5))
     for data_source_name, ppd in ppd_dict.items():
         per_point_deviation = np.mean(ppd, axis=0)
@@ -124,10 +123,11 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
     plt.show()
 
 
-def calculate_curvature(pca_data: PCAData):
-    data = pca_data.pca_data
-    anchors = pca_data.anchors
+def calculate_curvature(pca_data: PCAData, components: tuple[int, int]):
+    data = pca_data.pca_data.iloc[:, list(components)]
+    anchors = pca_data.anchors.iloc[:, list(components)]
     anchors_unique = anchors.drop_duplicates()
+    centre = np.mean(anchors_unique, axis=0)
     metadata = pca_data.metadata
     n_subsets = pca_data.n_unique_anchors
     ideal_data = []
@@ -147,10 +147,12 @@ def calculate_curvature(pca_data: PCAData):
             ideal_data.append(p0 + norm_step * vector)
         ideal_data.append(p1)
     ideal_df = pd.DataFrame(ideal_data, index=data.index, columns=data.columns)
-
+    closer_array = np.where(np.linalg.norm(ideal_df-centre, axis=1) > np.linalg.norm(data-centre, axis=1), -1, 1)
     residuals = ideal_df - data
     distances = np.linalg.norm(residuals, axis=1)
-    ppd = pd.Series(distances, index=data.index)
+    distances_adjusted = distances * closer_array
+
+    ppd = pd.Series(distances_adjusted, index=data.index)
     try:
         folded_ppd = pd.DataFrame(ppd.values.reshape(int(len(ppd) / n_subsets),n_subsets))
     except Exception as e:
