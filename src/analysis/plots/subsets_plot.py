@@ -14,6 +14,7 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
     components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=2)
     output_dir = kwargs.get('output_dir')
     curve_metrics_only = kwargs.get('curve_metrics_only', False)
+    absolute = kwargs.get('absolute', False)
 
     if not output_dir or not isinstance(output_dir, Path):
         raise ValueError('output_dir not provided or not a Path object')
@@ -114,11 +115,12 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
         if data_source_name == baseline_source: continue
         per_point_deviation = np.mean(ppd, axis=0)
         residuals = baseline_deviation - per_point_deviation
-        residuals = np.abs(residuals)
+        if absolute:
+            residuals = np.abs(residuals)
         mean_residuals = np.mean(residuals)
         plt.bar(data_source_name, mean_residuals)
-    plt.legend()
     plt.title('mean difference from 2p')
+    plt.xticks(rotation=45)
     plt.show()
 
 
