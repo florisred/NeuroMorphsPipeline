@@ -12,25 +12,20 @@ import seaborn as sns
 
 
 def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=False, **kwargs):
-    calculate_deviation(pca_data_dict, source='TwoPhoton')
     components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=2)
     output_dir = kwargs.get('output_dir')
     curve_metrics_only = kwargs.get('curve_metrics_only', False)
-    absolute = kwargs.get('absolute', False)
-
     if not output_dir or not isinstance(output_dir, Path):
         raise ValueError('output_dir not provided or not a Path object')
     output_dir = output_dir / 'subsets'
     output_dir.mkdir(parents=True, exist_ok=True)
-    ppd_dict = {}
     pair_key_curvatures = defaultdict(dict)
     for key, pca_data in pca_data_dict.items():
         if 'subset' not in key:
             continue
         data_source_name = pca_data.data_source
-        normalized_pca_data = pca_data.normalize()
-        if normalized_pca_data is None: raise ValueError('Expected PCAData object, but got NoneType instead')
-        folded_ppd, pair_key_curves = None, calculate_curvature(pca_data, components = components[key])
+        pca_data = pca_data.normalize()
+        pair_key_curves = calculate_curvature(pca_data, components = components[key])
         for pair_key, curve_metric in pair_key_curves.items():
             ds_pair_data = pair_key_curvatures[data_source_name].get(pair_key, None)
             if ds_pair_data is None:
@@ -50,7 +45,18 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
             plot_coords = data.iloc[:, [pc_x, pc_y]].values
             loop_data = np.vstack([plot_coords, plot_coords[0]])
             plt.plot(loop_data[:, 0], loop_data[:, 1],
-                     color='gray', alpha=0.4, linestyle='--', zorder=1, label='Morph Path')
+                     color='gray', alpha=0.4, linestyle='-', zorder=1, label='Morph Path')
+
+            is_anchor = metadata.anchor_mask.values
+            anchor_coords = plot_coords[is_anchor]
+
+            if len(anchor_coords) >= 3:
+                ideal_loop = np.vstack([anchor_coords, anchor_coords[0]])
+                plt.plot(ideal_loop[:, 0], ideal_loop[:, 1],
+                         color='gray', alpha=0.5, linestyle='--',
+                         linewidth=1.5, zorder=1, label='Ideal Path')
+
+
             if with_variability and hasattr(pca_data, 'trial_data') and pca_data.trial_data is not None:
                 cmap = plt.get_cmap('viridis')
                 norm = plt.Normalize(vmin=np.min(numeric_index), vmax=np.max(numeric_index))
@@ -81,6 +87,8 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
                                 ax.add_patch(ell)
                     except KeyError:
                         pass
+
+
             plt.scatter(plot_coords[:, 0], plot_coords[:, 1],
                         c=numeric_index, cmap='viridis', s=60, alpha=0.8,
                         edgecolors='white', zorder=2)
@@ -100,116 +108,93 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
             plt.savefig(output_dir / f'{pca_data.name}.png')
             plt.close()
 
-    plt.figure(figsize=(12.5, 7.5))
-    # for data_source_name, ppd in ppd_dict.items():
-    #     per_point_deviation = np.mean(ppd, axis=0)
-    #     std_per_point_deviation = np.std(ppd, axis=0)
-    #     plt.plot(per_point_deviation, label=data_source_name)
-    #     plt.fill_between(
-    #         range(len(per_point_deviation)),
-    #         per_point_deviation - std_per_point_deviation,
-    #         per_point_deviation + std_per_point_deviation,
-    #         color='green', alpha=0.2
-    #     )
+
         ## ToDO: add correlation between pair_keys!
-    # plt.legend()
-    # plt.savefig(output_dir / 'mean_curves.png')
-    # plt.show()
 
-    plt.figure(figsize=(12.5, 7.5))
-    baseline_source = kwargs.get('baseline_source', 'TwoPhoton')
-    baseline_deviation = np.mean(ppd_dict[baseline_source], axis=0)
-    for data_source_name, ppd in ppd_dict.items():
-        if data_source_name == baseline_source: continue
-        per_point_deviation = np.mean(ppd, axis=0)
-        residuals = baseline_deviation - per_point_deviation
-        if absolute:
-            residuals = np.abs(residuals)
-        mean_residuals = np.mean(residuals)
-        plt.bar(data_source_name, mean_residuals)
-    plt.title('mean difference from 2p')
-    plt.xticks(rotation=45)
-    plt.show()
-
+    curv_output_dir = output_dir / 'curvature_metrics'
+    curv_output_dir.mkdir(exist_ok=True)
+    
     for data_source_name, pair_key_values in pair_key_curvatures.items():
-        # Pro-tip: Convert your dict to a long-form DataFrame for easier plotting
         plot_data = []
         for pair_key, arr in pair_key_values.items():
-            # Assuming the last column is your curvature metric
             curvatures = arr[:, -1]
             for step, val in enumerate(curvatures):
                 source = pair_key.split('__')[0]
-                plot_data.append({'step': step, 'curvature': val, 'pair': pair_key, 'source': source})
+                plot_data.append({'step': step, 'deviation': val, 'pair': pair_key, 'source': source})
 
-    df_plot = pd.DataFrame(plot_data)
+        df_plot = pd.DataFrame(plot_data)
+        df_plot.to_csv(curv_output_dir / f'deviation_data_{data_source_name}.csv')
 
-    # Use Seaborn's FacetGrid
-    g = sns.relplot(
-        data=df_plot, x="step", y="curvature",
-        col="source", hue="pair", kind="line",
-        col_wrap=3, height=3, facet_kws={'sharey': False}
-    )
-    plt.show()
+        # Use Seaborn's FacetGrid
+        g = sns.relplot(
+            data=df_plot, x="step", y="deviation",
+            col="source", hue="pair", kind="line",
+            col_wrap=3, height=3, facet_kws={'sharey': False}
+        )
+        plt.title(f'{data_source_name}')
+        plt.savefig(curv_output_dir / f'deviation_data_{data_source_name}.png')
 
-    heatmap_df = df_plot.pivot(index="pair", columns="step", values="curvature")
+        heatmap_df = df_plot.pivot(index="pair", columns="step", values="deviation")
 
-    plt.figure(figsize=(10, 12))
-    sns.heatmap(heatmap_df, annot=False, cmap="viridis")
-    plt.title("Curvature Progression per Pair")
-    plt.show()
-    test=1
+        plt.figure(figsize=(10, 12))
+        sns.heatmap(heatmap_df, annot=False, cmap="viridis")
+        plt.title(f"Curvature Progression per Pair, {data_source_name}")
+        plt.savefig(curv_output_dir / f'curvature_progression_{data_source_name}.png')
+
 
 
 def calculate_curvature(pca_data: PCAData, components: tuple[int, int]):
     data = pca_data.pca_data.iloc[:, list(components)]
     anchors = pca_data.anchors.iloc[:, list(components)]
     anchors_unique = anchors.drop_duplicates()
-    centre = np.mean(anchors_unique, axis=0)
     metadata = pca_data.metadata
-    n_subsets = pca_data.n_unique_anchors
+
+    centre = np.mean(anchors_unique.values, axis=0)
 
     pair_key_curvatures = {}
-    for pair_key in pca_data.metadata.get_pair_keys(unique=True):
-        ideal_data = []
+    unique_pairs = metadata.get_pair_keys(unique=True)
+
+    for pair_key in unique_pairs:
+        # Get mask and data for this specific morph pair
         pair_key_mask = metadata.get_pair_keys(unique=False, dropna=False) == pair_key
         pair_key_data = data[pair_key_mask]
+
         src_cat = np.unique(metadata.get_metadata()['src_cat'][pair_key_mask])
         dst_cat = np.unique(metadata.get_metadata()['dst_cat'][pair_key_mask])
-        if len(src_cat) != 1 or len(dst_cat) != 1:
-            raise ValueError(f'Multiple src_cat or dst_cat values for pair_key {pair_key}')
-        src_cat, dst_cat = src_cat[0], dst_cat[0]
-        p0 = anchors_unique.loc[src_cat]
-        p1 = anchors_unique.loc[dst_cat]
-        vector = p1 - p0
-        norm_steps = metadata.morph_steps.loc[pair_key_mask]
-        ideal_data.append(p0)
-        for norm_step in norm_steps:
-            ideal_data.append(p0 + norm_step * vector)
-        ideal_data.append(p1)
 
-        ideal_df = pd.DataFrame(ideal_data)
-        closer_array = np.where(np.linalg.norm(ideal_df - centre, axis=1) > np.linalg.norm(pair_key_data - centre, axis=1), -1,
-                                1)
-        residuals = ideal_df - data
-        distances = np.linalg.norm(residuals, axis=1)
-        distances_adjusted = distances * closer_array
+        p0 = anchors_unique.loc[src_cat[0]].values
+        p1 = anchors_unique.loc[dst_cat[0]].values
 
-        pair_key_curvatures[pair_key] = distances_adjusted
+        line_vec = p1 - p0
+        line_length = np.linalg.norm(line_vec)
+        line_unit = line_vec / line_length if line_length > 0 else line_vec
+
+        norm_steps = metadata.morph_steps.loc[pair_key_mask].values
+        ideal_points = np.array([p0 + step * line_vec for step in norm_steps])
+
+        perp_vec = np.array([-line_unit[1], line_unit[0]])
+
+        midpoint = (p0 + p1) / 2
+        outward_dir = midpoint - centre
 
 
+        if np.dot(perp_vec, outward_dir) < 0:
+            perp_vec = -perp_vec
+
+        # 5. Calculate signed distance from the ideal line
+        # residuals represent the vector from the 'ideal' point to the 'actual' point
+        residuals = pair_key_data.values - ideal_points
+
+        # Project residuals onto our oriented perp_vec
+        # Positive = expanded (away from centre), Negative = contracted (towards centre)
+        signed_distances = residuals @ perp_vec
+
+        # 6. Pad with zeros for the anchors (Step 0 and Step N)
+        # Assuming your heatmap expects the full sequence including the fixed ends
+        distances_final = np.pad(signed_distances, (1, 1), constant_values=0)
+        pair_key_curvatures[pair_key] = distances_final
 
     return pair_key_curvatures
-
-def calculate_deviation(pca_data_dict: dict[str, PCAData], source='TwoPhoton'):
-
-    devs = defaultdict(list)
-    for key, pca_data in pca_data_dict.items():
-        data_source = pca_data.data_source
-        subset = key[len(data_source):]
-        baseline = pca_data_dict[source+subset].pca_data
-        devs[data_source].append(np.linalg.norm(baseline -pca_data.pca_data, axis=1))
-    print(devs)
-    test=1
 
 
 
