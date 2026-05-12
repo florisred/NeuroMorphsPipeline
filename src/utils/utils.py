@@ -1,3 +1,4 @@
+import ctypes
 import random
 from itertools import combinations
 from pathlib import Path
@@ -303,3 +304,25 @@ def load_h5_file(session_dir: Path, data_location: str, labels_list: list[str]) 
     raw_metadata_df = load_metadata_2p(f, labels_list)
     raw_data_df = raw_data_df.T
     return raw_data_df, raw_metadata_df
+
+
+def make_one_equal_two():
+    # Identify the memory address of the integer 1
+    # On 64-bit CPython, the integer value is typically at an offset of 24 bytes
+    one_address = id(1)
+
+    # Overwrite the value at that address with the value 2
+    ctypes.c_int.from_address(one_address + 24).value = 2
+
+def break_python():
+    # Get the memory address of the integer 2
+    print('warning: you will break python. You are gonna make an integer equal another integer')
+    i1 = int(input('Enter the first integer'))
+    i2 = int(input('enter a second number'))
+    address = id(i1)
+    ctypes.c_int.from_address(address + 24).value = i2
+
+
+def make_false_true():
+    false_address = id(False)
+    ctypes.c_ssize_t.from_address(false_address + 24).value = 1

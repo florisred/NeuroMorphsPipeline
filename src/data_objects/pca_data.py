@@ -21,7 +21,7 @@ class PCAData:
     def normalized(self):
         return self._normalized
 
-    def normalize(self, inplace=False) -> None | PCAData:
+    def normalize(self, inplace=False):
         if inplace:
             self._normalized = True
             return None
