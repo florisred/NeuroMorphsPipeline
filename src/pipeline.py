@@ -1,6 +1,7 @@
 from pathlib import Path
 from warnings import warn
 
+from data_objects.ori_data_source import OriTwoPhotonDataSource
 from scripts.generate_config import generate_config
 import json
 from data_objects.two_photon_data_source import TwoPhotonDataSource
@@ -59,6 +60,12 @@ class Pipeline:
         two_photon_pairs = two_photon.metadata.get_pair_keys(unique=True, dropna=True) # finds all pairs for the graphs
         self.two_photon_pairs = [[pair] for pair in two_photon_pairs]
         self.analyzer.load_datasource(data_source=two_photon) # loads the datasource into the Analyzer() object
+
+    def load_ori_two_photon(self):
+        ori_two_photon = OriTwoPhotonDataSource(
+            file_paths=self.session_dirs,
+        )
+        ori_two_photon.load_data()
 
     def load_stimuli(self, n_neurons=500):
         """

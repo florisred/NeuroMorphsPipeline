@@ -225,3 +225,14 @@ class TrialMetadata:
     def nearest_anchor(self):
         return self.get_metadata()['nearest_anchor']
 
+
+class OriMetaData:
+    def __init__(self, metadata_df: Optional[pd.DataFrame] = None):
+        """
+        Initializes the TrialMetadata object.
+
+        Args:
+            metadata_df: Initial metadata. Defaults to an empty DataFrame.
+        """
+        self._metadata_df: pd.DataFrame = metadata_df if metadata_df is not None else pd.DataFrame()
+
