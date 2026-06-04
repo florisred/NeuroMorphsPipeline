@@ -142,16 +142,20 @@ def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir
             neuron_param_dict[i]["wavelength"] = random.choice(wavelengths)
             neuron_param_dict[i]["gamma"] = gamma
             while True:
-                receptive_field_size = random.choice(receptive_field_sizes) * 2
+                receptive_field_size = random.choice(receptive_field_sizes) * 4
                 img_shape = images[0].shape
                 if receptive_field_size < min(img_shape) / 2: break
             while True:
                 receptive_field_location = (np.random.randint(0, img_shape[0]), np.random.randint(0, img_shape[1]))
-                x1 = receptive_field_location[0] - receptive_field_size // 2
-                y1 = receptive_field_location[1] - receptive_field_size // 2
-                x2 = receptive_field_location[0] + receptive_field_size // 2
-                y2 = receptive_field_location[1] + receptive_field_size // 2
-                if 0 < min([x1,x2,y1,y2]) < max(img_shape):
+                x1 = receptive_field_location[1] - receptive_field_size // 2
+                x2 = x1+receptive_field_size
+                y1 = receptive_field_location[0] - receptive_field_size // 2
+                y2 = y1 + receptive_field_size
+                # x2 = receptive_field_location[0] + receptive_field_size // 2
+                # y2 = receptive_field_location[1] + receptive_field_size // 2
+                x_possible = 0 <min(x1,x2) < max(x1,x2) < img_shape[1]
+                y_possible = 0 < min(y1,y2) < max(y1,y2) < img_shape[0]
+                if x_possible and y_possible:
                     break
             receptive_field = [[x1,y1], [x2,y2]]
             neuron_param_dict[i]["receptive_field"] = receptive_field
@@ -166,6 +170,9 @@ def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir
                 gamma = neuron_params["gamma"]
                 (x1, y1), (x2, y2) = neuron_params["receptive_field"]
                 img_crop = img[y1:y2, x1:x2]
+                if min(img_crop.shape) == 0:
+                    print('holy hell!')
+
                 theta = np.deg2rad(orientation)
                 sigma = 0.5 * wavelength
                 ksize = int(wavelength * 2) | 1
@@ -265,7 +272,10 @@ def load_images(image_dir: Path, flat: bool = False) -> tuple[npt.NDArray[np.flo
     """
     images = []
     image_names = []
-    for image_path in sorted(image_dir.glob("*.png")):
+    image_paths_png = sorted(image_dir.glob("*.png"))
+    image_paths_bmp = sorted(image_dir.glob("*.bmp"))
+    image_paths = image_paths_png + image_paths_bmp
+    for image_path in image_paths:
         img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
         if img is None:
             continue
@@ -327,3 +337,21 @@ def break_python():
 def make_false_true():
     false_address = id(False)
     ctypes.c_ssize_t.from_address(false_address + 24).value = 1
+
+def ori_process_image_names(image_names:list):
+    """
+    :param image_names: List of image paths. Has to have '_' as a divider, one part has to be parsable as an int between 0 and 180, representing degrees of orientation
+    """
+    if len(image_names) ==0: raise AssertionError("Need at least one image to parse")
+    int_names = []
+    for name in image_names:
+        img_parts = name.split('_')
+        for part in img_parts:
+            if '.bmp' in part:
+                part = part[:-4]
+            try:
+                int_part = float(part)
+                int_names.append(int_part)
+            except ValueError: test=1
+    return int_names
+
