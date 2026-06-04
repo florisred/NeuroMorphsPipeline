@@ -77,7 +77,10 @@ if __name__ == "__main__":
 
     nm = Pipeline()
     nm.load_ori_two_photon()
-
+    nm.load_ori_pixel()
+    nm.load_ori_dist_gabor()
+    nm.load_ori_gabor()
+    nm.pca_ori_data()
     #nm.load_two_photon(split=False)
 
     #nm.load_different_dst_gabors(n=5)#, rf_sizes_list=[[5,10], [10,20], [20,30], [30,40], [40,50]])

@@ -1,12 +1,17 @@
 from pathlib import Path
 from warnings import warn
 
-from data_objects.ori_data_source import OriTwoPhotonDataSource
+from analysis.plots.ori_ring_plot import ori_explained_variance_plot
+from data_objects.ori_data_source import OriTwoPhotonDataSource, OriPixeLWiseDataSource, OriGaborDataSource, \
+    OriDistGaborDataSource
 from scripts.generate_config import generate_config
 import json
 from data_objects.two_photon_data_source import TwoPhotonDataSource
 from analysis.analyzer import Analyzer
 from data_objects.stimulus_data_source import StimulusGaborDataSource, StimulusPixelWiseDataSource, DistributedGaborDataSource
+
+#temp:
+from src.analysis.plots.ori_ring_plot import ori_ring_plot
 
 class Pipeline:
     """
@@ -21,6 +26,8 @@ class Pipeline:
         project_root = Path(__file__).parent.parent
         config_dir = project_root / "config"
         settings_file = config_dir / "settings.json"
+
+        self._ori_data_sources = {}
 
         # check if there is a config file, if not let user generate it
         if not settings_file.is_file():
@@ -61,11 +68,50 @@ class Pipeline:
         self.two_photon_pairs = [[pair] for pair in two_photon_pairs]
         self.analyzer.load_datasource(data_source=two_photon) # loads the datasource into the Analyzer() object
 
-    def load_ori_two_photon(self):
+    def load_ori_two_photon(self, name:str = 'ori2pDataSource'):
         ori_two_photon = OriTwoPhotonDataSource(
             file_paths=self.session_dirs,
         )
         ori_two_photon.load_data()
+        self._ori_data_sources[name] = ori_two_photon
+
+    def load_ori_pixel(self, name:str = 'oriPixelDataSource'):
+        ori_pixel = OriPixeLWiseDataSource(
+            file_paths=[self.data_dir / 'stimuli'],
+            output_dir=self.output_dir / 'output'
+        )
+        ori_pixel.load_data()
+        self._ori_data_sources[name] = ori_pixel
+
+    def load_ori_gabor(self, name:str = 'oriGaborDataSource'):
+        ori_gabor = OriGaborDataSource(
+            file_paths=[self.data_dir / 'stimuli'],
+            output_dir=self.output_dir / 'output',
+            gabor_params = self.settings["gabor_params"]
+        )
+        ori_gabor.load_data()
+        self._ori_data_sources[name] = ori_gabor
+
+    def load_ori_dist_gabor(self, name:str = 'oriDistGaborDataSource'):
+        ori_dist_gabor = OriDistGaborDataSource(
+            file_paths=[self.data_dir / 'stimuli'],
+            output_dir=self.output_dir / 'output',
+            rf_dstr_path=self.data_dir / 'rfsizes',
+            gabor_params=self.settings["gabor_params"]
+        )
+        ori_dist_gabor.load_data()
+        self._ori_data_sources[name] = ori_dist_gabor
+
+    def pca_ori_data(self, n_components:int = 8):
+        ori_output_dir = self.output_dir / 'ori_plots'
+        ori_output_dir.mkdir(exist_ok=True)
+
+        for key, ori_data_source in self._ori_data_sources.items():
+            pca_data = ori_data_source.pca_data(n_components=n_components)
+            explained_variance = ori_data_source.explained_variance
+            ori_ring_plot(pca_data, title=key, output_dir=ori_output_dir)
+            ori_explained_variance_plot(explained_variance, title=key, output_dir=ori_output_dir)
+
 
     def load_stimuli(self, n_neurons=500):
         """
