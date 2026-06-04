@@ -75,7 +75,7 @@ class DistributedGaborDataSource(DataSource):
             flat=False
         )
         images_names_duplicated = []
-        for i_n, img in zip(images_names, images):
+        for i_n in images_names:
             for i in range(n_trials):
                 images_names_duplicated.append(i_n)
         self._data = create_distributed_gabor(images, gabor_params, self.output_dir, n_trials=7, save_and_load=save_and_load)
