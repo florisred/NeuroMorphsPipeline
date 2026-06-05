@@ -2,6 +2,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from utils.utils import find_max_seperation_dataframe
+
 
 def ori_ring_plot(
         ori_pca_data: pd.DataFrame,
@@ -9,12 +11,13 @@ def ori_ring_plot(
         output_dir: Path
 ):
 
+    components_to_use = find_max_seperation_dataframe(pca_dataframe=ori_pca_data, num_comps=2)
     orientation_data = ori_pca_data.index.astype(int).to_numpy()
 
     plt.figure()
     scatter = plt.scatter(
-        ori_pca_data.iloc[:, 0],
-        ori_pca_data.iloc[:, 1],
+        ori_pca_data.iloc[:, components_to_use[0]],#components_to_use[0]],
+        ori_pca_data.iloc[:, components_to_use[1]],
         c=orientation_data,
         cmap='viridis'
     )
