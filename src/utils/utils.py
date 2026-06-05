@@ -103,13 +103,13 @@ def shuffle(
     return raw_data_df.iloc[permutation], raw_metadata_df.iloc[permutation]
 
 
-def find_max_separation(pca_data_dict, num_comps):
+def find_max_separation(num_comps, pca_data_dict):
     dist_dict = {}
     for name, pca_data in pca_data_dict.items():
         dist_dict[name] = {}
-        anchor_data = pca_data.anchors.drop_duplicates()
-        for component_combination in list(combinations(range(anchor_data.shape[1]), num_comps)):
-            anchor_data_filtered_components = anchor_data[list(component_combination)]
+        data_to_use = pca_data.anchors.drop_duplicates()
+        for component_combination in list(combinations(range(data_to_use.shape[1]), num_comps)):
+            anchor_data_filtered_components = data_to_use[list(component_combination)]
             all_distances = pdist(anchor_data_filtered_components.values)
             total_separation = all_distances.mean()
             dist_dict[name][component_combination] = total_separation
@@ -122,6 +122,23 @@ def find_max_separation(pca_data_dict, num_comps):
         comp_dict[name] = max_key
     return comp_dict
 
+def find_max_seperation_dataframe(num_comps, pca_dataframe: pd.DataFrame):
+    index=pca_dataframe.index
+    data_to_use = pca_dataframe.groupby(index).mean()
+    dist_dict = {}
+    for component_combination in list(combinations(range(data_to_use.shape[1]), num_comps)):
+        data_filtered_components = data_to_use[list(component_combination)]
+        all_distances = pdist(data_filtered_components.values)
+        total_separation = all_distances.mean()
+        dist_dict[component_combination] = total_separation
+    max_key = None
+    for key in dist_dict.keys():
+        if max_key is None or dist_dict[key] > dist_dict[max_key]:
+            max_key = key
+    return max_key
+
+
+
 def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir: Path, n_trials = 7, save_and_load=True) -> pd.DataFrame:
         if save_and_load:
             gabor_save_file = output_dir / "gabor_distributed_normalized_features_stimuli.npy"
@@ -129,16 +146,19 @@ def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir
                 print("Gabor Feature matrix already exists. Loading...")
                 return pd.DataFrame(np.load(gabor_save_file))
         wavelengths = gabor_params["wavelengths"]
-        orientations = gabor_params["orientations"]
+        #orientations = gabor_params["orientations"]
         gamma = gabor_params["gamma"]
         receptive_field_sizes = gabor_params["receptive_field_sizes"]
         n_neurons = gabor_params["n_neurons"]
         fano_factor = 20
         sensor_noise_std = 2
         neuron_param_dict = {}
+        orientation_dict = gabor_params["orientation_dict"]
+        orientations = [int(key) for key in orientation_dict.keys()]
+        orientation_probs = list(orientation_dict.values())
         for i in range(n_neurons):
             neuron_param_dict[i] = {}
-            neuron_param_dict[i]["orientation"] = random.choice(orientations)
+            neuron_param_dict[i]["orientation"] = np.random.choice(orientations, 1, p=orientation_probs)[0]
             neuron_param_dict[i]["wavelength"] = random.choice(wavelengths)
             neuron_param_dict[i]["gamma"] = gamma
             while True:
@@ -151,8 +171,6 @@ def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir
                 x2 = x1+receptive_field_size
                 y1 = receptive_field_location[0] - receptive_field_size // 2
                 y2 = y1 + receptive_field_size
-                # x2 = receptive_field_location[0] + receptive_field_size // 2
-                # y2 = receptive_field_location[1] + receptive_field_size // 2
                 x_possible = 0 <min(x1,x2) < max(x1,x2) < img_shape[1]
                 y_possible = 0 < min(y1,y2) < max(y1,y2) < img_shape[0]
                 if x_possible and y_possible:
@@ -232,7 +250,9 @@ def process_gabor(images: npt.NDArray, gabor_params: dict, output_dir: Path) -> 
 
     print("Starting Gabor Feature tranformations...")
     wavelengths = gabor_params["wavelengths"]
-    orientations = gabor_params["orientations"]
+    orientation_dict = gabor_params["orientation_dict"]
+    orientations = [int(key) for key in orientation_dict.keys()]
+    #orientation_probs = list(orientation_dict.values())
     gamma = gabor_params["gamma"]
     grid_size = gabor_params["grid_size"]
     all_features = []
