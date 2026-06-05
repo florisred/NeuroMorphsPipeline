@@ -119,13 +119,13 @@ class OriDistGaborDataSource(OriDataSource):
         self.rf_dstr_path = rf_dstr_path
 
 
-    def load_data(self, n_neurons=500, n_trials = 10, rf_size_multiplier=1, save_and_load=False, rf_size_list: list[int] = None):
+    def load_data(self, n_neurons=500, n_trials = 10, rf_size_multiplier=1, save_and_load=True, rf_size_list: list[int] = None):
         gabor_params = self.gabor_params
         gabor_params['n_neurons'] = n_neurons
 
         images, images_names = load_images(
             image_dir=self.file_paths[0],
-            flat=False
+            flat=False,
         )
         processed_names = ori_process_image_names(images_names)
         images_names_duplicated = []
