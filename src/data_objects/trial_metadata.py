@@ -242,8 +242,5 @@ class OriMetaData(TrialMetadata):
         super().__init__(metadata_df)
 
 
-        Args:
-            metadata_df: Initial metadata. Defaults to an empty DataFrame.
-        """
-        self._metadata_df: pd.DataFrame = metadata_df if metadata_df is not None else pd.DataFrame()
+
 
