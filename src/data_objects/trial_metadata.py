@@ -4,6 +4,8 @@ import numpy.typing as npt
 import copy
 from typing import Union, List, Tuple, Optional, Set
 
+from utils.utils import mark_uniques
+
 
 class TrialMetadata:
     """
@@ -226,10 +228,19 @@ class TrialMetadata:
         return self.get_metadata()['nearest_anchor']
 
 
-class OriMetaData:
-    def __init__(self, metadata_df: Optional[pd.DataFrame] = None):
-        """
-        Initializes the TrialMetadata object.
+class OriMetaData(TrialMetadata):
+    def __init__(self, names_list: list):
+        metadata_df = pd.DataFrame(index=names_list)
+        metadata_df['stim_type'] = np.where(mark_uniques(names_list) == True, 'anchor', 'morph')
+        nan_list = [np.nan] * len(names_list)
+        metadata_df['step_index'] = nan_list
+        metadata_df['pair_key'] = nan_list
+        metadata_df['dst_cat'] = nan_list
+        metadata_df['src_cat'] = nan_list
+        metadata_df['nearest_anchor'] = nan_list
+        metadata_df['morph_name'] = names_list
+        super().__init__(metadata_df)
+
 
         Args:
             metadata_df: Initial metadata. Defaults to an empty DataFrame.

@@ -354,3 +354,22 @@ def ori_process_image_names(image_names:list):
             except ValueError: test=1
     return int_names
 
+
+def mark_uniques(input_list) -> list:
+    """
+    Function that takes a list, and marks each first occurrence of each value as True, the rest as false. Returns a list
+    of the same shape as the original list, with only True or False
+
+    :param input_list: list that should be marked for first occurences
+    """
+    seen = set()
+    result = []
+
+    for item in input_list:
+        if item not in seen:
+            result.append(True)
+            seen.add(item)
+        else:
+            result.append(False)
+
+    return result
