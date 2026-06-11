@@ -86,20 +86,20 @@ def rdm_analysis(pca_data_dict: dict[str, PCAData], **kwargs):
         nms = np.arange(sqr.shape[0])
         _plot_rdm(sqr, nms, f"avg_{key}", rdm_output_dir, show=show)
 
-    # 4. Average and Plot Subtraction Matrices
-    for key, value_list in sbtr_mtcs.items():
-        if not value_list: continue
-        avg_rdm = np.mean(value_list, axis=0)
-        sqr = squareform(avg_rdm)
-        nms = np.arange(sqr.shape[0])
-        _plot_rdm(sqr, nms, f"subtraction_{key}", rdm_output_dir, full_data=full_data, show=show)
+    # # 4. Average and Plot Subtraction Matrices
+    # for key, value_list in sbtr_mtcs.items():
+    #     if not value_list: continue
+    #     avg_rdm = np.mean(value_list, axis=0)
+    #     sqr = squareform(avg_rdm)
+    #     nms = np.arange(sqr.shape[0])
+    #     _plot_rdm(sqr, nms, f"subtraction_{key}", rdm_output_dir, full_data=full_data, show=show)
 
     # 5. Average and Plot Stability Matrix
     if stb_mtcs:
         # Note: This np.mean assumes all groups had the exact same number of `names`.
         # If subsets have different lengths, this will raise a numpy broadcast error.
         avg_stb_mx = np.mean(stb_mtcs, axis=0)
-        _plot_stability(avg_stb_mx, names, rdm_output_dir, name='stability_avg', show=show, full_data=full_data)
+        _plot_stability(avg_stb_mx, names, rdm_output_dir, name='Representational Stability', show=show, full_data=full_data)
 
 
 def _plot_stability(matrix, labels, output_dir, name, show, full_data):
@@ -108,10 +108,10 @@ def _plot_stability(matrix, labels, output_dir, name, show, full_data):
                 xticklabels=labels, yticklabels=labels, square=True)
     plt.xticks(rotation=45, ha='right')
     plt.yticks(rotation=0)
-    if full_data: name = name + (f"full")
-    plt.title(f"Representational Stability ({name})", pad=20, fontsize=15)
+    plt.title(f"{name}", pad=20, fontsize=15)
     plt.tight_layout()
-    plt.savefig(output_dir / f"{name}.png")
+    if full_data: name = name + (f"full")
+    plt.savefig(output_dir / f"{name}.svg")
     if show: plt.show()
     plt.close()  # Critical: Prevent memory leaks
 
@@ -135,6 +135,6 @@ def _plot_rdm(matrix, labels, name, output_dir, show, full_data=False):
     plt.title(f"RDM: {name}", pad=20, fontsize=16)
 
     plt.tight_layout()
-    plt.savefig(output_dir / f"rdm_{name}.png", bbox_inches='tight')
+    plt.savefig(output_dir / f"rdm_{name}.svg", bbox_inches='tight')
     if show: plt.show()
     plt.close()  # Critical: Prevent memory leaks
