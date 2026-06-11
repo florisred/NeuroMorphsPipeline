@@ -337,27 +337,6 @@ def load_h5_file(session_dir: Path, data_location: str, labels_list: list[str]) 
     return raw_data_df, raw_metadata_df
 
 
-def make_one_equal_two():
-    # Identify the memory address of the integer 1
-    # On 64-bit CPython, the integer value is typically at an offset of 24 bytes
-    one_address = id(1)
-
-    # Overwrite the value at that address with the value 2
-    ctypes.c_int.from_address(one_address + 24).value = 2
-
-def break_python():
-    # Get the memory address of the integer 2
-    print('warning: you will break python. You are gonna make an integer equal another integer')
-    i1 = int(input('Enter the first integer'))
-    i2 = int(input('enter a second number'))
-    address = id(i1)
-    ctypes.c_int.from_address(address + 24).value = i2
-
-
-def make_false_true():
-    false_address = id(False)
-    ctypes.c_ssize_t.from_address(false_address + 24).value = 1
-
 def ori_process_image_names(image_names:list):
     """
     :param image_names: List of image paths. Has to have '_' as a divider, one part has to be parsable as an int between 0 and 180, representing degrees of orientation

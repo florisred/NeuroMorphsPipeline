@@ -6,7 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from utils.utils import find_max_separation
-from utils.utils import make_one_equal_two
 import pandas as pd
 import seaborn as sns
 
