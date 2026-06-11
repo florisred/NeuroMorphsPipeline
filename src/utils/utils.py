@@ -189,7 +189,7 @@ def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir
                 (x1, y1), (x2, y2) = neuron_params["receptive_field"]
                 img_crop = img[y1:y2, x1:x2]
                 if min(img_crop.shape) == 0:
-                    print('holy hell!')
+                    raise AssertionError("Cropped image does not contain pixels")
 
                 theta = np.deg2rad(orientation)
                 sigma = 0.5 * wavelength
@@ -220,7 +220,6 @@ def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir
 
 
 def process_image_names(image_names_raw):
-    ## ToDO: make this not hard coded
     src_cats = []
     dst_cats = []
     step_indeces = []
@@ -243,27 +242,41 @@ def process_image_names(image_names_raw):
     return stimuli_metadata
 
 def process_gabor(images: npt.NDArray, gabor_params: dict, output_dir: Path) -> pd.DataFrame:
+
+    """
+    The main function that creates the gabor filter bank used in the analyses.
+    Takes the images in their normal shape, a dictionary of the gabor params, and an output dir, where it should save
+    both the processed images and a normalized_features.npy file. This file can be then loaded again to save time
+    """
+    # init path of save file
     gabor_save_file = output_dir / "gabor_normalized_features_stimuli.npy"
     if Path.exists(gabor_save_file):
         print("Gabor Feature matrix already exists. Loading...")
         return pd.DataFrame(np.load(gabor_save_file))
 
     print("Starting Gabor Feature tranformations...")
+    # loads the gabor parameters
     wavelengths = gabor_params["wavelengths"]
     orientation_dict = gabor_params["orientation_dict"]
     orientations = [int(key) for key in orientation_dict.keys()]
-    #orientation_probs = list(orientation_dict.values())
     gamma = gabor_params["gamma"]
     grid_size = gabor_params["grid_size"]
     all_features = []
+
+    #creates or loads the gabor images folder
     gabor_img_dir =  output_dir / 'gabor_images'
     if not output_dir.exists(): output_dir.mkdir()
     if not gabor_img_dir.exists(): gabor_img_dir.mkdir()
+
     if len(images) <1:
         raise ValueError("Please provide at least one image to process....")
+
+    # applies the gabor filter bank on a per-image basis
     for i, img in enumerate(images):
         print(f"Processing image {i + 1}/{len(images)}")
         image_vector = []
+
+        # for each wavelength and orientation combination, it creates a separate 'gabor-filtered image'
         for lambd in wavelengths:
             sigma = 0.5 * lambd
             for theta_deg in orientations:
@@ -310,6 +323,10 @@ def load_images(image_dir: Path, flat: bool = False) -> tuple[npt.NDArray[np.flo
     return np.array(images), image_names
 
 def load_metadata_2p(f, labels_list: list[str]):
+    """
+    helper function of load_h5_file. the loaded file, and the labels, and returns a dataframe with the correct columns
+    and data
+    """
     raw_metadata_dataframe = pd.DataFrame()
     for metadata_location in labels_list:
         meta_name = metadata_location.split("/")[-1]
@@ -319,7 +336,10 @@ def load_metadata_2p(f, labels_list: list[str]):
 
 def load_h5_file(session_dir: Path, data_location: str, labels_list: list[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Loads data from h5 file
+    Loads data from h5 file located in session_dir. Looks within that file for the data in data_location, and for
+    metadata in each entry of lables_list.
+
+
     :param session_dir:
     :param data_location:
     :param labels_list:
