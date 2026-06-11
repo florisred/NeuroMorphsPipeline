@@ -2,17 +2,24 @@ from pathlib import Path
 
 import numpy as np
 from sklearn.decomposition import PCA
+from sklearn.externals.array_api_extra import testing
+
 from data_objects.data_source import DataSource
+from data_objects.pca_data import PCAData
 from data_objects.trial_metadata import TrialMetadata, OriMetaData
 from utils.utils import load_h5_file, scale_session, load_images, ori_process_image_names, process_gabor, \
     create_distributed_gabor
 import pandas as pd
+import numpy.typing as npt
 
 class OriDataSource(DataSource):
     def __init__(self, file_paths: list[Path]):
         super().__init__(file_paths)
         self._pca_data = None
         self._data_type = "OrientationData"
+        self._pca_data = None
+        self._labels_list = None
+        #self.metadata=None
 
     def pca_data(self, n_components: int, return_data=True):
         if self._pca_data is None:
@@ -26,6 +33,15 @@ class OriDataSource(DataSource):
             self._pca_data['data'] =  pd.DataFrame(self._pca_data['model'].fit_transform(self._data), index=self._data.index)
             self._pca_data['n_components'] = n_components
             self._pca_data['explained_variance'] = self._pca_data['model'].explained_variance_ratio_
+
+
+        self.pca_data_object=OriPCAData(
+            pca_type=self._data_type,
+            pca_output=self._pca_data['data'].to_numpy(),
+            names_list=self.names_list,
+            explained_variance=self._pca_data['explained_variance'],
+        )
+
         if return_data: return self._pca_data['data']
         return None
 
@@ -40,6 +56,10 @@ class OriDataSource(DataSource):
         if self.pca_data is None:
             raise AttributeError("No pca_data")
         return self._pca_data['n_components']
+
+    @property
+    def names_list(self):
+        return self._data.index.astype(str).to_list()
 
 
 
@@ -146,6 +166,14 @@ class OriDistGaborDataSource(OriDataSource):
         index = pd.Index(images_names_duplicated)
         data.set_index(index, inplace=True)
         self._data = data
-        test=1
+
+
+class OriPCAData(PCAData):
+
+    def __init__(self,pca_type: str, pca_output: npt.NDArray, names_list:list, explained_variance: npt.NDArray = None):
+        metadata = OriMetaData(names_list)
+
+        super().__init__(pca_type=pca_type, pca_output=pca_output, metadata=metadata, morph_names=pd.Index(names_list, name='morph_name'), explained_variance=explained_variance)
+
 
 
