@@ -68,14 +68,14 @@ class Pipeline:
         self.two_photon_pairs = [[pair] for pair in two_photon_pairs]
         self.analyzer.load_datasource(data_source=two_photon) # loads the datasource into the Analyzer() object
 
-    def load_ori_two_photon(self, name:str = 'ori2pDataSource'):
+    def load_ori_two_photon(self, name:str = 'Neural-Sate Space'):
         ori_two_photon = OriTwoPhotonDataSource(
             file_paths=self.session_dirs,
         )
         ori_two_photon.load_data()
         self._ori_data_sources[name] = ori_two_photon
 
-    def load_ori_pixel(self, name:str = 'oriPixelDataSource'):
+    def load_ori_pixel(self, name:str = 'Raw Pixel State-Space'):
         ori_pixel = OriPixeLWiseDataSource(
             file_paths=[self.data_dir / 'stimuli'],
             output_dir=self.output_dir / 'output'
@@ -83,7 +83,7 @@ class Pipeline:
         ori_pixel.load_data()
         self._ori_data_sources[name] = ori_pixel
 
-    def load_ori_gabor(self, name:str = 'oriGaborDataSource'):
+    def load_ori_gabor(self, name:str = 'Gabor Filter Bank Space'):
         ori_gabor = OriGaborDataSource(
             file_paths=[self.data_dir / 'stimuli'],
             output_dir=self.output_dir / 'output',
@@ -92,7 +92,7 @@ class Pipeline:
         ori_gabor.load_data()
         self._ori_data_sources[name] = ori_gabor
 
-    def load_ori_dist_gabor(self, name:str = 'oriDistGaborDataSource'):
+    def load_ori_dist_gabor(self, name:str = 'GaborNet State Space'):
         ori_dist_gabor = OriDistGaborDataSource(
             file_paths=[self.data_dir / 'stimuli'],
             output_dir=self.output_dir / 'output',
@@ -106,11 +106,28 @@ class Pipeline:
         ori_output_dir = self.output_dir / 'ori_plots'
         ori_output_dir.mkdir(exist_ok=True)
 
+        pca_data_dict={}
+        for key, ori_data_source in self._ori_data_sources.items():
+            ori_data_source.pca_data(n_components=n_components, return_data=False)
+            pca_data =  ori_data_source.pca_data_object
+            pca_data.set_name(key)
+            pca_data_dict[key] =pca_data
+
+        from src.analysis.plots.rdm_plot import rdm_analysis_full
+        kwargs = {}
+        kwargs['output_dir'] = Path(
+            '/home/protred/Documents/OrientationData/Ori_NeuralData/Ori_Data/output/plots/ori_plots/')
+        kwargs['show'] = True
+        rdm_analysis_full(pca_data_dict, **kwargs)
+        test=1
+
         for key, ori_data_source in self._ori_data_sources.items():
             pca_data = ori_data_source.pca_data(n_components=n_components)
             explained_variance = ori_data_source.explained_variance
             ori_ring_plot(pca_data, title=key, output_dir=ori_output_dir)
             ori_explained_variance_plot(explained_variance, title=key, output_dir=ori_output_dir)
+
+
 
 
     def load_stimuli(self, n_neurons=500):
