@@ -49,11 +49,12 @@ class PCAManager:
                 pca_name = f'{key}_full'
                 if pca_name not in self.cache:
                     pca_data = self.run_pca(
-                        all_data=ds.data, fit_data=ds.anchors,
+                        all_data=ds.data, fit_data=ds.data,
                         n_components=comps, metadata=ds.metadata, pca_type='full'
                     ) # fits on the anchors only.
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
+
             if 'split_full' in pca_types and ds.is_split:
                 pca_name = f'{key}_full'
                 if pca_name not in self.cache:
@@ -72,6 +73,17 @@ class PCAManager:
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
 
+            if 'anchors' in pca_types and not ds.is_split:
+                pca_name = f'{key}_anchors'
+                if pca_name not in self.cache:
+                    pca_data = self.run_pca(
+                        all_data=ds.data, fit_data=ds.anchors,
+                        n_components=comps, metadata=ds.metadata, pca_type='anchors'
+                    )
+                    pca_data.set_name(pca_name)
+                    self.cache[pca_name] = pca_data
+
+
             if 'subsets' in pca_types and not ds.is_split:
                 subs = subsets or ds.find_stimulus_cycles(n=3)
                 # Clear old subsets for this key
@@ -87,7 +99,7 @@ class PCAManager:
 
                     pca_data = self.run_pca(
                         all_data=temp_ds.data, n_components=comps,
-                        fit_data=temp_ds.anchors, metadata=temp_ds.metadata, pca_type='subsets'
+                        fit_data=ds.anchors, metadata=temp_ds.metadata, pca_type='subsets'
                     ) # ds for all data, temp_ds for subset data
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
@@ -123,6 +135,7 @@ class PCAManager:
         :return: PCAData object, with the TrialMetadata Object and the transformed data
         """
         pca_model = PCA(n_components=n_components)
+        fit_data = None
         if fit_data is not None: # if fit_data is none, just fit the data on all the data!
             if min(fit_data.shape) < n_components:
                 pca_model = PCA(n_components=min(fit_data.shape))
@@ -135,7 +148,7 @@ class PCAManager:
                 logger.warning(
                     f"PCA fitting with {n_components} PCA components is not possible. Using {min(all_data.shape)} instead.")
             pca_result = pca_model.fit_transform(all_data)
-        explained_variance = None#pca_model.explained_variance_ratio_
+        explained_variance = pca_model.explained_variance_ratio_
         pca_data = PCAData(
             pca_output = pca_result,
             explained_variance = explained_variance,

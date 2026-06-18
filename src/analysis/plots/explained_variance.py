@@ -13,6 +13,6 @@ def plot_variance(pca_data_dict: dict[str, PCAData], **kwargs):
         explained_variance = pca_data.explained_variance
 
         plt.plot(explained_variance, label=data_source)
-    plt.title('Explained Variance')
-    plt.legend()
-    plt.savefig(output_dir / 'explained_variance.svg')
+        plt.title(f'Explained Variance {key}')
+        plt.savefig(output_dir / f'explained_variance_{key}.svg')
+        plt.close()

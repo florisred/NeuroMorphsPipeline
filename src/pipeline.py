@@ -185,13 +185,17 @@ class Pipeline:
 
 
 
-
+    def create_3d_plots(self):
+        self.analyzer.create_plots(plot_types=['3d'], output_dir=self.output_dir, n_components=3)
 
     def create_full_rdm_plots(self, n_components = 3, avg_only = True):
         self.analyzer.create_plots(plot_types=['rdm_full'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
 
     def create_rdm_plots(self, n_components = 3, avg_only = False):
         self.analyzer.create_plots(plot_types=['rdm'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
+
+    def create_anchor_rmd_plots(self, n_components = 3, avg_only = True):
+        self.analyzer.create_plots(plot_types = ['anchor_rdm'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
 
     def create_interactive_plots(self, n_components = 3, avg_only = True):
         self.analyzer.create_plots(['interactive'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
@@ -232,6 +236,6 @@ class Pipeline:
         self.analyzer.create_plots(
             plot_types=['explained_variance_full'],
             output_dir=self.output_dir,
-            n_components=20,
+            n_components=8,
         )
 

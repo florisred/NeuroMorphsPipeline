@@ -11,21 +11,31 @@ from data_objects.pca_data import PCAData
 
 def rdm_analysis_full(pca_data_dict: dict[str, PCAData], **kwargs):
     kwargs['full_data'] = True
+    kwargs['output_dir'] = kwargs.get('output_dir') / 'rdm_full'
     rdm_analysis(pca_data_dict, **kwargs)
 
+def anchor_rdm(pca_data_dict: dict[str, PCAData], **kwargs):
+    kwargs['full_data'] = True
+    kwargs['output_dir'] = kwargs.get('output_dir') / 'anchor_rdm'
+    kwargs['anchors_only'] = True
+    rdm_analysis(pca_data_dict, **kwargs)
 
 def rdm_analysis(pca_data_dict: dict[str, PCAData], **kwargs):
     output_dir = kwargs.get('output_dir')
     if not output_dir or not isinstance(output_dir, Path):
         raise ValueError('output_dir not provided or is not a Path object')
 
-    rdm_output_dir = output_dir / 'rdm'
-    rdm_output_dir.mkdir(parents=True, exist_ok=True)
 
     n_components = kwargs.get('n_components', 2)
     dist_metric = kwargs.get('dist_metric', 'euclidean')
     full_data = kwargs.get('full_data', False)
+    anchors_only = kwargs.get('anchors_only', False)
     show = kwargs.get('show', False)
+
+    if not full_data:
+        rdm_output_dir = output_dir / 'rdm'
+    else: rdm_output_dir = output_dir
+    rdm_output_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Separate grouping logic from calculation logic
     analysis_groups = defaultdict(list)
@@ -54,7 +64,11 @@ def rdm_analysis(pca_data_dict: dict[str, PCAData], **kwargs):
 
         # Calculate RDMs via pdist
         for pca_data in pca_data_list:
-            data = pca_data.get_data_components(n_components=n_components)
+            if anchors_only:
+                anchors=pca_data.anchors
+                data = anchors.drop_duplicates()
+            else:
+                data = pca_data.get_data_components(n_components=n_components)
             distance_vector = pdist(data.values, metric=dist_metric)
             rdms[pca_data.name] = distance_vector
             all_rdms[pca_data.data_source].append(distance_vector)

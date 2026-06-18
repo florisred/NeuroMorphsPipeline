@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Union
 
 from data_objects.data_source import DataSource
 from analysis.pca_manager import PCAManager
-from analysis.plots import distances, interactive, rdm_plot, subsets_plot, explained_variance  # Import our new standalone plots module
+from analysis.plots import distances, interactive, rdm_plot, subsets_plot, explained_variance, plot_3d  # Import our new standalone plots module
 from analysis.classification.classify import  classify as classify_data
 
 logger = logging.getLogger(__name__)
@@ -19,8 +19,10 @@ class Analyzer:
         'interactive': interactive.create_interactive_plot,
         'distances': distances.calculate_distances,
         'subsets': subsets_plot.create_subset_plots,
+        '3d': plot_3d.create_3d_plot,
         'rdm': rdm_plot.rdm_analysis,
         'rdm_full': rdm_plot.rdm_analysis_full,
+        'anchor_rdm': rdm_plot.anchor_rdm,
         'rdm_split_full': rdm_plot.rdm_analysis_full,
         'distances_split': distances.calculate_distances,
         'classification': classify_data,
@@ -35,10 +37,12 @@ class Analyzer:
         'rdm': ['subsets'],
         'rdm_full': ['full'],
         'rdm_split_full': ['full', 'split_full'],
+        'anchor_rdm': ['anchors'],
         'distances_split': ['split_full'],
         'classification': ['split_full'],
         'explained_variance_full': ['full'],
         'explained_variance_subsets': ['subsets'],
+        '3d': ['full']
     }
 
     def __init__(self, n_components: int = 3):
