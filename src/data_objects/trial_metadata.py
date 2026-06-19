@@ -24,7 +24,6 @@ class TrialMetadata:
         self._trial_lens: List[int] = []
         self._masked_metadata: Optional[pd.DataFrame] = None
         self._use_mask: bool = False
-        self._train_mask: Optional[np.ndarray] = None
         self._filter_mask: Optional[np.ndarray] = None
 
     @property
@@ -158,18 +157,11 @@ class TrialMetadata:
         self._filter_mask = mask
         self._update_masked_view()
 
-    def apply_train_mask(self, mask: np.ndarray) -> None:
-        """Applies a training/test split mask."""
-        self._train_mask = mask
-        self._update_masked_view()
-
     def _update_masked_view(self) -> None:
         """Internal helper to combine active masks."""
         combined_mask = None
         if self._filter_mask is not None:
             combined_mask = self._filter_mask
-        if self._train_mask is not None:
-            combined_mask = self._train_mask if combined_mask is None else (combined_mask & self._train_mask)
 
         if combined_mask is not None:
             self._masked_metadata = self._metadata_df[combined_mask]
@@ -178,7 +170,6 @@ class TrialMetadata:
     def disable_mask(self) -> None:
         """Clears all masks and returns to full dataset view."""
         self._filter_mask = None
-        self._train_mask = None
         self._use_mask = False
         self._masked_metadata = None
 

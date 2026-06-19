@@ -23,11 +23,8 @@ class DataSource(ABC):
         self._data = None
         self._metadata = TrialMetadata()
         self._data_type = 'Unknown'
-        self._use_train_test_all = 'all'
-        self._train_mask = None
         self._filter_mask = None
         self._use_mask = False
-        self._split = False
 
     @property
     def data_type(self) -> str:
@@ -35,14 +32,8 @@ class DataSource(ABC):
         The data type returns a string that contains the information about this data source. For example, two_photon, 
         Gabor, Pixel, etc. If it contains split data (train-test), add that too.
         """
-        
-        if self.is_split:
-            return f'{self._data_type}split'
-        else: return self._data_type
 
-    @property
-    def is_split(self):
-        return self._split
+        return self._data_type
 
 
     @abstractmethod
@@ -133,29 +124,9 @@ class DataSource(ABC):
         relevant_anchors = np.unique(
             [texture for transition in transitions for texture in transition.split('__')])
         all_morph_names =  self.metadata.get_morph_names(ignore_mask=True)
-        if self._split:
-            all_morph_names = [name.split('_')[-2] for name in all_morph_names]
         mask_relevant_anchors = [name in relevant_anchors for name in all_morph_names]
         final_mask = mask1 | np.array(mask_relevant_anchors)
-        if self._train_mask is not None: final_mask &= self._train_mask
-
-        self._train_mask = final_mask
         self._metadata.apply_mask(final_mask)
-        self._use_mask = True
-
-    def set_train_test(self, to_use: str):
-        """
-        Applies a mask to the data, such that only train or test data becomes visible.
-        :param to_use: a string of what to use (train, test, or all)
-        """
-        if to_use not in ['test', 'train', 'all']:
-            logger.error('Use either test, train, or all')
-        self._use_train_test_all = to_use
-        if to_use == 'all':
-            self._train_mask = [True for i in range(len(self._data))]
-        else:
-            self._train_mask = self._data.index.str.endswith(to_use)
-        self._metadata.apply_train_mask(self._train_mask)
         self._use_mask = True
 
     def update_data_source(self, name: str, append:bool=True):

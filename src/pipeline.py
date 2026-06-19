@@ -218,23 +218,6 @@ class Pipeline:
         self.analyzer.create_plots(plot_types=['subsets'], output_dir=self.output_dir,
                                    subsets=self.two_photon_triplets, n_components=n_components, avg_only=avg_only, show=show, with_variability=with_variability, curve_metrics_only=curve_metrics_only)
 
-    def create_split_data_rdm(self, show=False):
-        self.analyzer.create_plots(
-            plot_types=['rdm_split_full'],
-            output_dir=self.output_dir,
-            n_components=3,
-            avg_only=True,
-            show=show
-        )
-
-    def create_split_distances(self, show=False, n_components=3):
-        self.analyzer.create_plots(
-            plot_types=['distances_split'],
-            output_dir=self.output_dir,
-            n_components=n_components,
-            avg_only=True,
-            show=show
-        )
 
     def classify(self,):
         self.analyzer.classify()

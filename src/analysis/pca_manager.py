@@ -45,7 +45,7 @@ class PCAManager:
         # looks through every datasource that has been loaded
         for key, ds in self.datasources.items():
             # if the pca_type is full, make sure that it has that
-            if 'full' in pca_types and not ds.is_split:
+            if 'full' in pca_types:
                 pca_name = f'{key}_full'
                 if pca_name not in self.cache:
                     pca_data = self.run_pca(
@@ -55,25 +55,8 @@ class PCAManager:
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
 
-            if 'split_full' in pca_types and ds.is_split:
-                pca_name = f'{key}_full'
-                if pca_name not in self.cache:
-                    test_ds = ds.copy()
-                    test_ds.set_train_test('test')
-                    train_ds = ds.copy()
-                    train_ds.set_train_test('train')
-                    pca_data = self.run_pca(
-                        all_data=test_ds.data,
-                        fit_data=train_ds.anchors,
-                        n_components=comps,
-                        metadata=test_ds.metadata,
-                        pca_type='split_full',
-                        train_test = '_test'
-                    )
-                    pca_data.set_name(pca_name)
-                    self.cache[pca_name] = pca_data
 
-            if 'anchors' in pca_types and not ds.is_split:
+            if 'anchors' in pca_types:
                 pca_name = f'{key}_anchors'
                 if pca_name not in self.cache:
                     pca_data = self.run_pca(
@@ -84,7 +67,7 @@ class PCAManager:
                     self.cache[pca_name] = pca_data
 
 
-            if 'subsets' in pca_types and not ds.is_split:
+            if 'subsets' in pca_types:
                 subs = subsets or ds.find_stimulus_cycles(n=3)
                 # Clear old subsets for this key
                 keys_to_drop = [k for k in self.cache.keys() if 'subset' in k and k.startswith(key)]
@@ -103,7 +86,7 @@ class PCAManager:
                     ) # ds for all data, temp_ds for subset data
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
-            if 'pairs' in pca_types and not ds.is_split:
+            if 'pairs' in pca_types:
                 subs = subsets or ds.find_stimulus_cycles(n=2)
                 # Clear old subsets for this key
                 keys_to_drop = [k for k in self.cache.keys() if 'subset' in k and k.startswith(key)]
@@ -125,7 +108,7 @@ class PCAManager:
 
 
     @staticmethod
-    def run_pca(pca_type: str, metadata: TrialMetadata, all_data: pd.DataFrame, n_components: int, fit_data: pd.DataFrame=None, train_test= ''):
+    def run_pca(pca_type: str, metadata: TrialMetadata, all_data: pd.DataFrame, n_components: int, fit_data: pd.DataFrame=None):
         """
         :param pca_type: type of pca used, used for identification later on
         :param metadata: TrialMetadata object
@@ -160,5 +143,5 @@ class PCAManager:
             morph_names = all_data.index
         )
         pca_data.metadata.synchronize_with_data(combined_df=pca_data.pca_data)
-        pca_data.sort(train_test)
+        pca_data.sort()
         return pca_data

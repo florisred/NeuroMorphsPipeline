@@ -23,8 +23,6 @@ class Analyzer:
         'rdm': rdm_plot.rdm_analysis,
         'rdm_full': rdm_plot.rdm_analysis_full,
         'anchor_rdm': rdm_plot.anchor_rdm,
-        'rdm_split_full': rdm_plot.rdm_analysis_full,
-        'distances_split': distances.calculate_distances,
         'classification': classify_data,
         'explained_variance_full': explained_variance.plot_variance,
         'explained_variance_subsets': explained_variance.plot_variance
@@ -36,10 +34,7 @@ class Analyzer:
         'subsets': ['subsets'],
         'rdm': ['subsets'],
         'rdm_full': ['full'],
-        'rdm_split_full': ['full', 'split_full'],
         'anchor_rdm': ['anchors'],
-        'distances_split': ['split_full'],
-        'classification': ['split_full'],
         'explained_variance_full': ['full'],
         'explained_variance_subsets': ['subsets'],
         '3d': ['full']

@@ -2,7 +2,7 @@ from pathlib import Path
 from data_objects.trial_metadata import TrialMetadata
 from data_objects.data_source import DataSource
 import pandas as pd
-from utils.utils import scale_session, split_morphs, load_h5_file
+from utils.utils import scale_session, load_h5_file
 import logging
 import numpy as np
 
