@@ -100,17 +100,27 @@ if __name__ == "__main__":
             'labels': 'y/orientation_deg'
         }
     )
-    # nm.load_ori_two_photon()
-    # nm.load_ori_pixel()
-    # nm.load_ori_dist_gabor()
-    # nm.load_ori_gabor()
-    # nm.pca_ori_data()
 
-    #nm.load_two_photon(split=False)
-    #
-    # #nm.load_different_dst_gabors(n=5)#, rf_sizes_list=[[5,10], [10,20], [20,30], [30,40], [40,50]])
-    #
-    #nm.load_stimuli(n_neurons=5612)
+    nm.create_plots(
+        plot_types = [
+            'interactive',
+            'distances',
+            'subsets',
+            '3d',
+            'rdm',
+            'rdm_full',
+            'anchor_rdm',
+            'classification',
+            'explained_variance_full',
+            'explained_variance_subsets'
+        ],
+        plot_config = {
+            'show' : False, # decides if the plots are shown in the IDE or not, they are always saved
+            'subsets_n' : 3, # decides the number of anchors in the subsets plot, use 3 for the triplets
+            'subsets_with_variability' : True, # if there are multiple trials, plot all of them next to the average
+        }
+    )
+
 
     #nm.create_interactive_plots()
     #nm.create_3d_plots()
@@ -119,7 +129,7 @@ if __name__ == "__main__":
     #
     # nm.classify()
     #
-    #nm.create_triplet_plots(show=True, with_variability=True, curve_metrics_only = False)
+    #nm.create_triplet_plots(show=True, with_variability=True)
     #
     #nm.create_rdm_plots(n_components='max')
     #
@@ -127,8 +137,8 @@ if __name__ == "__main__":
     #
     #nm.create_interactive_plots()
     #
-    nm.create_anchor_rmd_plots(n_components='max')
-    nm.create_full_rdm_plots(n_components='max')
+    # nm.create_anchor_rmd_plots(n_components='max')
+    # nm.create_full_rdm_plots(n_components='max')
 
 
 # ToDO: Hoe ver het allemaal van het midden afzit

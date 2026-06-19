@@ -17,7 +17,7 @@ def create_interactive_plot(pca_data_dict: dict[str, PCAData], **kwargs):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Extract indices for readability
-    components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=3)
+    components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=3, filter='full')
 
     for k, pca_data in pca_data_dict.items():
         if 'full' not in k: continue

@@ -53,28 +53,27 @@ class Analyzer:
             self,
             plot_types: Union[List[str], Tuple[str]],
             output_dir: Path,
-            subsets: Optional[List] = None,
-            n_components: Optional[int] = None,
-            avg_only: bool = False,
-            remove_prev: bool = True,
-            show: bool = False,
-            components_to_use: list[int] = None,
-            with_variability: bool = False,
-            curve_metrics_only: bool = False,
-    ):
-        params = {k: v for k, v in locals().items() if k != 'self'}
+            plot_config: dict,
 
-        if remove_prev:
-            self.pca_manager.clear_cache()
+    ):
+        subsets_n = plot_config.get('subsets_n', 3)
+        n_components = plot_config.get('n_components', 'max')
+        show = plot_config.get('show', False)
+        subsets_with_variability = plot_config.get('subsets_with_variability', True)
+
+        plot_config['output_dir'] = output_dir
+
+        #params = {k: v for k, v in locals().items() if k != 'self'}
+
         output_dir.mkdir(parents=True, exist_ok=True)
 
         required_pca_types = {tuple(self.PCA_REQUIREMENTS[p]) for p in plot_types if p in self.PCA_REQUIREMENTS}
         for req_type in required_pca_types:
-            # req_type will now be a tuple like ('full',)
-            self.pca_manager.prepare_data(pca_types=req_type, n_components=n_components, subsets=subsets)
+            logger.info(f'Loading PCA data for {req_type}')
+            self.pca_manager.prepare_data(pca_types=req_type, n_components=n_components, subsets_n=subsets_n)
 
         for plot_type in plot_types:
             plot_func = self.PLOT_REGISTRY.get(plot_type)
             if plot_func:
                 logger.info(f"Generating {plot_type} plots...")
-                plot_func(self.pca_manager.cache, **params)
+                plot_func(self.pca_manager.cache, **plot_config)

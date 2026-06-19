@@ -162,33 +162,8 @@ class Pipeline:
                 ori_explained_variance_plot(explained_variance, title=key, output_dir=ori_output_dir)
 
 
-
-    def load_different_dst_gabors(self, n=4, rf_sizes_list: list[list] = None):
-        if rf_sizes_list is None:
-            for i in range(1, n+1):
-                distributed_gabor = DistributedGaborDataSource(
-                    file_paths=[self.data_dir / 'stimuli'],
-                    rf_dstr_path=self.data_dir / 'rfsizes',
-                    gabor_params=self.settings["gabor_params"],
-                    output_dir=self.data_dir / 'output',
-                )
-                rf_size_multiplier = 1 / i
-                distributed_gabor.update_data_source(str(rf_size_multiplier), append=True)
-                distributed_gabor.load_data(n_neurons = 1000, rf_size_multiplier=rf_size_multiplier, save_and_load=False)
-                self.analyzer.load_datasource(data_source=distributed_gabor)
-        else:
-            for i in range(n):
-                distributed_gabor = DistributedGaborDataSource(
-                    file_paths=[self.data_dir / 'stimuli'],
-                    rf_dstr_path=self.data_dir / 'rfsizes',
-                    gabor_params=self.settings["gabor_params"],
-                    output_dir=self.data_dir / 'output',
-                )
-                rf_sizes = rf_sizes_list[i]
-                distributed_gabor.update_data_source(str(rf_sizes), append=True)
-                distributed_gabor.load_data(n_neurons = 1000, save_and_load=False, rf_size_list=rf_sizes)
-                self.analyzer.load_datasource(data_source=distributed_gabor)
-
+    def create_plots(self, plot_types: list, plot_config: dict):
+        self.analyzer.create_plots(plot_types=plot_types, output_dir=self.output_dir, plot_config=plot_config)
 
 
 
@@ -214,9 +189,9 @@ class Pipeline:
         self.analyzer.create_plots(
             plot_types=['subsets'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=3, avg_only=avg_only
         )
-    def create_triplet_plots(self, avg_only = True, show = False, with_variability = False, n_components = 3, curve_metrics_only:bool = False):
+    def create_triplet_plots(self, avg_only = True, show = False, with_variability = False, n_components = 3):
         self.analyzer.create_plots(plot_types=['subsets'], output_dir=self.output_dir,
-                                   subsets=self.two_photon_triplets, n_components=n_components, avg_only=avg_only, show=show, with_variability=with_variability, curve_metrics_only=curve_metrics_only)
+                                   subsets=self.two_photon_triplets, n_components=n_components, avg_only=avg_only, show=show, with_variability=with_variability)
 
 
     def classify(self,):

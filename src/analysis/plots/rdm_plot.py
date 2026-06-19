@@ -26,7 +26,7 @@ def rdm_analysis(pca_data_dict: dict[str, PCAData], **kwargs):
         raise ValueError('output_dir not provided or is not a Path object')
 
 
-    n_components = kwargs.get('n_components', 2)
+    n_components = kwargs.get('n_components', 'max')
     dist_metric = kwargs.get('dist_metric', 'euclidean')
     full_data = kwargs.get('full_data', False)
     anchors_only = kwargs.get('anchors_only', False)

@@ -54,11 +54,7 @@ class DataSource(ABC):
     @property
     def data(self):
         if self._use_mask:
-            if self._train_mask is not None and self._filter_mask is not None:
-                mask = self._train_mask & self._filter_mask
-            elif self._train_mask is not None:
-                mask = self._train_mask
-            elif self._filter_mask is not None:
+            if self._filter_mask is not None:
                 mask = self._filter_mask
             else:
                 logger.error("Somehow, mask was activated without either a train_mask or a filter_mask. Check what happened!")
@@ -126,6 +122,7 @@ class DataSource(ABC):
         all_morph_names =  self.metadata.get_morph_names(ignore_mask=True)
         mask_relevant_anchors = [name in relevant_anchors for name in all_morph_names]
         final_mask = mask1 | np.array(mask_relevant_anchors)
+        self._filter_mask = final_mask
         self._metadata.apply_mask(final_mask)
         self._use_mask = True
 

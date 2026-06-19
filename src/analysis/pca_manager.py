@@ -32,13 +32,13 @@ class PCAManager:
             logger.warning(f"Overwriting datasource: {key}")
         self.datasources[key] = data_source
 
-    def prepare_data(self, pca_types: tuple[str], n_components: Optional[int] = None, subsets: Optional[List] = None):
+    def prepare_data(self, pca_types: tuple[str], n_components: Optional[int] = None, subsets_n: Optional[int] = None):
         """
         Ensures the cache contains the requested pca_type for all datasources.
 
         :param pca_types: type of pca used, used for identification later on
         :param n_components: number of PCA components
-        :param subsets: list of subsets to use
+        :param subsets_n: number of subsets to use -> 3 for triplets
         """
         comps = n_components or self.default_components
 
@@ -68,7 +68,7 @@ class PCAManager:
 
 
             if 'subsets' in pca_types:
-                subs = subsets or ds.find_stimulus_cycles(n=3)
+                subs = ds.find_stimulus_cycles(n=subsets_n)
                 # Clear old subsets for this key
                 keys_to_drop = [k for k in self.cache.keys() if 'subset' in k and k.startswith(key)]
                 for k in keys_to_drop: self.cache.pop(k)
@@ -76,6 +76,7 @@ class PCAManager:
                 for subset in subs:
                     pca_name = f'{key}_{create_name_from_list(subset)}'
                     if pca_name in self.cache: continue
+                    logger.info(f"Creating PCA for subset {key} - {pca_name}")
 
                     temp_ds = ds.copy()
                     temp_ds.filter_transitions(subset)
@@ -84,25 +85,6 @@ class PCAManager:
                         all_data=temp_ds.data, n_components=comps,
                         fit_data=temp_ds.data, metadata=temp_ds.metadata, pca_type='subsets'
                     ) # ds for all data, temp_ds for subset data
-                    pca_data.set_name(pca_name)
-                    self.cache[pca_name] = pca_data
-            if 'pairs' in pca_types:
-                subs = subsets or ds.find_stimulus_cycles(n=2)
-                # Clear old subsets for this key
-                keys_to_drop = [k for k in self.cache.keys() if 'subset' in k and k.startswith(key)]
-                for k in keys_to_drop: self.cache.pop(k)
-
-                for subset in subs:
-                    pca_name = f'{key}_{create_name_from_list(subset)}'
-                    if pca_name in self.cache: continue
-
-                    temp_ds = ds.copy()
-                    temp_ds.filter_transitions(subset)
-
-                    pca_data = self.run_pca(
-                        all_data=temp_ds.data, n_components=comps,
-                        fit_data=temp_ds.anchors, metadata=temp_ds.metadata, pca_type='subsets'
-                    )  # ds for all data, temp_ds for subset data
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
 

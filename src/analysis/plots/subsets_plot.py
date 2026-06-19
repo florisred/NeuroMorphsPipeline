@@ -11,9 +11,9 @@ import seaborn as sns
 
 
 def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=False, **kwargs):
-    components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=2)
+    components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=2, filter='subset')
     output_dir = kwargs.get('output_dir')
-    curve_metrics_only = kwargs.get('curve_metrics_only', False)
+
     if not output_dir or not isinstance(output_dir, Path):
         raise ValueError('output_dir not provided or not a Path object')
     output_dir = output_dir / 'subsets'
@@ -34,58 +34,58 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
                 pair_key_curvatures[data_source_name][pair_key] = combined_array
 
 
-        if not curve_metrics_only:
-            pc_x, pc_y = components[key][0], components[key][1]
-            data = pca_data.pca_data
-            metadata = pca_data.metadata
-            numeric_index = pca_data.get_numeric_index()
-            plt.figure(figsize=(12.5, 7.5))
-            ax = plt.gca()
-            plot_coords = data.iloc[:, [pc_x, pc_y]].values
-            loop_data = np.vstack([plot_coords, plot_coords[0]])
-            plt.plot(loop_data[:, 0], loop_data[:, 1],
-                     color='gray', alpha=0.4, linestyle='-', zorder=1, label='Morph Path')
 
-            is_anchor = metadata.anchor_mask.values
-            anchor_coords = plot_coords[is_anchor]
+        pc_x, pc_y = components[key][0], components[key][1]
+        data = pca_data.pca_data
+        metadata = pca_data.metadata
+        numeric_index = pca_data.get_numeric_index()
+        plt.figure(figsize=(12.5, 7.5))
+        ax = plt.gca()
+        plot_coords = data.iloc[:, [pc_x, pc_y]].values
+        loop_data = np.vstack([plot_coords, plot_coords[0]])
+        plt.plot(loop_data[:, 0], loop_data[:, 1],
+                 color='gray', alpha=0.4, linestyle='-', zorder=1, label='Morph Path')
 
-            if len(anchor_coords) >= 3:
-                ideal_loop = np.vstack([anchor_coords, anchor_coords[0]])
-                plt.plot(ideal_loop[:, 0], ideal_loop[:, 1],
-                         color='gray', alpha=0.5, linestyle='--',
-                         linewidth=1.5, zorder=1, label='Ideal Path')
+        is_anchor = metadata.anchor_mask.values
+        anchor_coords = plot_coords[is_anchor]
+
+        if len(anchor_coords) >= 3:
+            ideal_loop = np.vstack([anchor_coords, anchor_coords[0]])
+            plt.plot(ideal_loop[:, 0], ideal_loop[:, 1],
+                     color='gray', alpha=0.5, linestyle='--',
+                     linewidth=1.5, zorder=1, label='Ideal Path')
 
 
-            if with_variability and hasattr(pca_data, 'trial_data') and pca_data.trial_data is not None:
-                cmap = plt.get_cmap('viridis')
-                norm = plt.Normalize(vmin=np.min(numeric_index), vmax=np.max(numeric_index))
-                for i, name in enumerate(metadata.morph_names):
-                    try:
-                        morph_trials = pca_data.trial_data.loc[name]
-                        if isinstance(morph_trials, pd.Series):
-                            trial_coords = morph_trials.iloc[[pc_x, pc_y]].values.reshape(1, -1)
-                        else:
-                            trial_coords = morph_trials.iloc[:, [pc_x, pc_y]].values
-                        color = cmap(norm(numeric_index[i]))
-                        plt.scatter(trial_coords[:, 0], trial_coords[:, 1],
-                                    color=color, s=20, alpha=0.3, zorder=1, edgecolors='none')
-                        if len(trial_coords) >= 2:
-                            cov = np.cov(trial_coords[:, 0], trial_coords[:, 1])
-                            if cov.ndim == 2:
-                                eigenvalues, eigenvectors = np.linalg.eigh(cov)
-                                order = eigenvalues.argsort()[::-1]
-                                eigenvalues = eigenvalues[order]
-                                eigenvectors = eigenvectors[:, order]
-                                angle = np.degrees(np.arctan2(*eigenvectors[:, 0][::-1]))
-                                n_std = 1
-                                width, height = 2 * n_std * np.sqrt(np.maximum(eigenvalues, 0))
-                                ell = Ellipse(xy=(np.mean(trial_coords[:, 0]), np.mean(trial_coords[:, 1])),
-                                              width=width, height=height, angle=angle,
-                                              facecolor=color, alpha=0.15, edgecolor=color,
-                                              linewidth=1.5, zorder=1)
-                                ax.add_patch(ell)
-                    except KeyError:
-                        pass
+        if with_variability and hasattr(pca_data, 'trial_data') and pca_data.trial_data is not None:
+            cmap = plt.get_cmap('viridis')
+            norm = plt.Normalize(vmin=np.min(numeric_index), vmax=np.max(numeric_index))
+            for i, name in enumerate(metadata.morph_names):
+                try:
+                    morph_trials = pca_data.trial_data.loc[name]
+                    if isinstance(morph_trials, pd.Series):
+                        trial_coords = morph_trials.iloc[[pc_x, pc_y]].values.reshape(1, -1)
+                    else:
+                        trial_coords = morph_trials.iloc[:, [pc_x, pc_y]].values
+                    color = cmap(norm(numeric_index[i]))
+                    plt.scatter(trial_coords[:, 0], trial_coords[:, 1],
+                                color=color, s=20, alpha=0.3, zorder=1, edgecolors='none')
+                    if len(trial_coords) >= 2:
+                        cov = np.cov(trial_coords[:, 0], trial_coords[:, 1])
+                        if cov.ndim == 2:
+                            eigenvalues, eigenvectors = np.linalg.eigh(cov)
+                            order = eigenvalues.argsort()[::-1]
+                            eigenvalues = eigenvalues[order]
+                            eigenvectors = eigenvectors[:, order]
+                            angle = np.degrees(np.arctan2(*eigenvectors[:, 0][::-1]))
+                            n_std = 1
+                            width, height = 2 * n_std * np.sqrt(np.maximum(eigenvalues, 0))
+                            ell = Ellipse(xy=(np.mean(trial_coords[:, 0]), np.mean(trial_coords[:, 1])),
+                                          width=width, height=height, angle=angle,
+                                          facecolor=color, alpha=0.15, edgecolor=color,
+                                          linewidth=1.5, zorder=1)
+                            ax.add_patch(ell)
+                except KeyError:
+                    pass
 
 
             plt.scatter(plot_coords[:, 0], plot_coords[:, 1],

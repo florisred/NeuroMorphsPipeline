@@ -47,9 +47,11 @@ def create_name_from_list(
     return final_name
 
 
-def find_max_separation(num_comps, pca_data_dict):
+def find_max_separation(num_comps, pca_data_dict, filter=None):
     dist_dict = {}
     for name, pca_data in pca_data_dict.items():
+        if filter is not None and filter not in name:
+            continue
         dist_dict[name] = {}
         data_to_use = pca_data.anchors.drop_duplicates()
         for component_combination in list(combinations(range(data_to_use.shape[1]), num_comps)):
@@ -87,10 +89,9 @@ def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir
         if save_and_load:
             gabor_save_file = output_dir / "gabor_distributed_normalized_features_stimuli.npy"
             if Path.exists(gabor_save_file):
-                print("Gabor Feature matrix already exists. Loading...")
+                print('GaborNet Feature Matrix found. Loading...')
                 return pd.DataFrame(np.load(gabor_save_file))
         wavelengths = gabor_params["wavelengths"]
-        #orientations = gabor_params["orientations"]
         gamma = gabor_params["gamma"]
         receptive_field_sizes = gabor_params["receptive_field_sizes"]
         n_neurons = gabor_params["n_neurons"]
