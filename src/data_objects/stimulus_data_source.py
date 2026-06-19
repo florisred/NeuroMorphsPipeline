@@ -2,7 +2,8 @@ from data_objects.data_source import DataSource
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from src.utils.utils import create_distributed_gabor, process_image_names, process_gabor, load_images
+from src.utils.utils import process_image_names, load_images
+from gabor_helper import create_distributed_gabor, process_gabor
 
 class StimulusGaborDataSource(DataSource):
     def __init__(self, file_paths: list[Path], gabor_params: dict, output_dir: Path):
@@ -78,7 +79,7 @@ class DistributedGaborDataSource(DataSource):
         for i_n in images_names:
             for i in range(n_trials):
                 images_names_duplicated.append(i_n)
-        self._data = create_distributed_gabor(images, gabor_params, self.output_dir, n_trials=7, save_and_load=save_and_load)
+        self._data = create_distributed_gabor(images, gabor_params, self.output_dir, n_trials=n_trials, save_and_load=save_and_load)
         metadata = process_image_names(images_names_duplicated)
 
         self._metadata.process_and_append(metadata)

@@ -81,20 +81,18 @@ class PCAData:
     def get_numeric_index(self):
         return np.arange(len(self.pca_data))
 
-    def sort(self, train_test = ""):
+    def sort(self):
         morph_names = list(self.metadata.morph_names)
         pair_keys =self.metadata.get_pair_keys()
 
         final_sequence = []
         for pair_key in pair_keys:
             matching_morphs = self.metadata_df[self.metadata.get_pair_keys(unique=False, dropna=False) == pair_key]
-            src_name = f"{np.unique(matching_morphs['src_cat'])[0]}{train_test}"
+            src_name = f"{np.unique(matching_morphs['src_cat'])[0]}"
             final_sequence.append(src_name)
             matching_morphs.sort_values(by='norm_step', inplace=True)
             for morph_name in matching_morphs.index:
                 final_sequence.append(morph_name)
-            if train_test != '':
-                dst_name = f"{np.unique(matching_morphs['dst_cat'])[0]}_{train_test}"
             else: dst_name = f"{np.unique(matching_morphs['dst_cat'])[0]}"
             final_sequence.append(dst_name)
 

@@ -6,6 +6,9 @@ from sklearn.model_selection import StratifiedShuffleSplit, ShuffleSplit
 
 
 def classify(datasource_dict: dict, k_folds: int = 5, **kwargs):
+    output_dir = kwargs['output_dir'] / 'classification'
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     plt.figure(figsize=(10, 6))
 
     fractions = [0.1, 0.5, 1.0]
@@ -97,4 +100,4 @@ def classify(datasource_dict: dict, k_folds: int = 5, **kwargs):
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.grid(axis='y', alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f'{output_dir}/classification.svg')

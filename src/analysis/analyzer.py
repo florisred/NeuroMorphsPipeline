@@ -74,4 +74,7 @@ class Analyzer:
             plot_func = self.PLOT_REGISTRY.get(plot_type)
             if plot_func:
                 logger.info(f"Generating {plot_type} plots...")
-                plot_func(self.pca_manager.cache, **plot_config)
+                if plot_type == 'classification':
+                    plot_func(self.pca_manager.datasources, **plot_config)
+                else:
+                    plot_func(self.pca_manager.cache, **plot_config)

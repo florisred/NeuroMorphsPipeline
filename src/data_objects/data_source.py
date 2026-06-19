@@ -59,9 +59,10 @@ class DataSource(ABC):
             else:
                 logger.error("Somehow, mask was activated without either a train_mask or a filter_mask. Check what happened!")
                 mask = [True for i in range(len(self._data))]
-            return self._data[mask]
+            data = self._data[mask].copy()
+            return data
 
-        return self._data
+        return self._data.copy()
 
     @property
     def metadata(self):

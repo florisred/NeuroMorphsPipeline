@@ -61,6 +61,7 @@ class Pipeline:
             self,
             sources: list,
             n_simulated_neurons_GaborNet: int=500,
+            n_repeat_trials:int=7,
             h5_locations_textures:dict|None=None,
             h5_locations_ori:dict|None=None
     ):
@@ -93,7 +94,7 @@ class Pipeline:
                 gabor_params=self.settings["gabor_params"],
                 output_dir=self.data_dir / 'output',
             )
-            gabor_net.load_data(n_neurons=n_simulated_neurons_GaborNet)
+            gabor_net.load_data(n_neurons=n_simulated_neurons_GaborNet,n_trials=n_repeat_trials)
             self.analyzer.load_datasource(gabor_net)
 
         if 'PixelWise' in sources:
@@ -127,7 +128,7 @@ class Pipeline:
                 rf_dstr_path=self.data_dir / 'rfsizes',
                 gabor_params=self.settings["gabor_params"]
             )
-            ori_dist_gabor.load_data()
+            ori_dist_gabor.load_data(n_trials=n_repeat_trials)
             self._ori_data_sources['GaborNet State Space'] = ori_dist_gabor
         if 'ori_PixelWise' in sources:
             ori_pixel = OriPixeLWiseDataSource(
