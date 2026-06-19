@@ -75,18 +75,42 @@ if __name__ == "__main__":
     
     """
 
-    nm = Pipeline()
+    nm = Pipeline(
+        data_folder= "/home/protred/Documents/neuro_texmorphs/data/", # texture
+        # data_folder = ""/home/protred/Documents/OrientationData/Ori_NeuralData/Ori_Data/" # orientation data
+    )
+    nm.load_data_sources(
+        sources=[
+            '2p',
+            'GaborFilterBank',
+            'GaborNet',
+            'PixelWise',
+            #'ori_2p',
+            #'ori_GaborFilterBank',
+            #'ori_GaborNet',
+            #'ori_PixelWise',
+        ],
+        n_simulated_neurons_GaborNet = 5612,
+        h5_locations_textures = {
+            'data':'X',
+            'labels': ['y/pair_key', 'y/step_index', 'y/src_cat', 'y/dst_cat']
+        },
+        h5_locations_ori = {
+            'data':'X',
+            'labels': 'y/orientation_deg'
+        }
+    )
     # nm.load_ori_two_photon()
     # nm.load_ori_pixel()
     # nm.load_ori_dist_gabor()
     # nm.load_ori_gabor()
     # nm.pca_ori_data()
 
-    nm.load_two_photon(split=False)
+    #nm.load_two_photon(split=False)
     #
     # #nm.load_different_dst_gabors(n=5)#, rf_sizes_list=[[5,10], [10,20], [20,30], [30,40], [40,50]])
     #
-    nm.load_stimuli(n_neurons=5612)
+    #nm.load_stimuli(n_neurons=5612)
 
     #nm.create_interactive_plots()
     #nm.create_3d_plots()
