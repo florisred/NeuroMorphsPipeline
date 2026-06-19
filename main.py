@@ -97,14 +97,14 @@ if __name__ == "__main__":
     #
     #nm.create_triplet_plots(show=True, with_variability=True, curve_metrics_only = False)
     #
-    nm.create_rdm_plots(n_components=6)
+    #nm.create_rdm_plots(n_components='max')
     #
     # nm.create_distances_plots()
     #
     #nm.create_interactive_plots()
     #
-    #nm.create_anchor_rmd_plots(n_components=6)
-    #nm.create_full_rdm_plots(n_components=6)
+    nm.create_anchor_rmd_plots(n_components='max')
+    nm.create_full_rdm_plots(n_components='max')
 
 
 # ToDO: Hoe ver het allemaal van het midden afzit

@@ -99,7 +99,7 @@ class PCAManager:
 
                     pca_data = self.run_pca(
                         all_data=temp_ds.data, n_components=comps,
-                        fit_data=ds.anchors, metadata=temp_ds.metadata, pca_type='subsets'
+                        fit_data=temp_ds.data, metadata=temp_ds.metadata, pca_type='subsets'
                     ) # ds for all data, temp_ds for subset data
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
@@ -139,7 +139,6 @@ class PCAManager:
             if fit_data is not None: n_components=min(fit_data.shape)
             else: n_components=min(all_data.shape)
         pca_model = PCA(n_components=n_components)
-        fit_data = None
         if fit_data is not None: # if fit_data is none, just fit the data on all the data!
             if min(fit_data.shape) < n_components:
                 pca_model = PCA(n_components=min(fit_data.shape))
