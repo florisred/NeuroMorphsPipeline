@@ -2,7 +2,6 @@ from pathlib import Path, PosixPath
 import numpy as np
 import plotly.graph_objects as go
 from data_objects.pca_data import PCAData
-from utils.utils import find_max_separation
 
 
 def create_interactive_plot(pca_data_dict: dict[str, PCAData], **kwargs):

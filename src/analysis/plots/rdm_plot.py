@@ -42,14 +42,16 @@ def rdm_analysis(pca_data_dict: dict[str, PCAData], **kwargs):
 
     for t_key, pca_data in pca_data_dict.items():
         pca_data_normalized = pca_data.normalize()
-        if full_data:
-            if 'subset' in t_key: continue
+        if full_data and not anchors_only:
+            if 'subset' in t_key or 'anchors' in t_key: continue
             analysis_groups['full_dataset'].append(pca_data_normalized)
-        else:
-            if 'full' in t_key: continue
+        elif not anchors_only:
+            if 'full' in t_key or 'anchors' in t_key: continue
             ds_key = t_key.split('_')[0]
             subset_name = t_key[len(ds_key) + 1:]
             analysis_groups[subset_name].append(pca_data_normalized)
+        else:
+            if 'anchors' in t_key: analysis_groups['full_dataset'].append(pca_data_normalized)
 
     all_rdms = defaultdict(list)
     stb_mtcs = []

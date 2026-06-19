@@ -2,11 +2,9 @@ from pathlib import Path
 
 import numpy as np
 from sklearn.decomposition import PCA
-from sklearn.externals.array_api_extra import testing
-
 from data_objects.data_source import DataSource
 from data_objects.pca_data import PCAData
-from data_objects.trial_metadata import TrialMetadata, OriMetaData
+from data_objects.trial_metadata import OriMetaData
 from utils.utils import load_h5_file, scale_session, load_images, ori_process_image_names, process_gabor, \
     create_distributed_gabor
 import pandas as pd
@@ -60,12 +58,6 @@ class OriDataSource(DataSource):
     @property
     def names_list(self):
         return self._data.index.astype(str).to_list()
-
-
-
-
-    def find_stimulus_cycles(self, n=3):
-        return NotImplementedError("Finding stimulus cycles is not implemented in orientation tuning")
 
 class OriTwoPhotonDataSource(OriDataSource):
     def __init__(self, file_paths: list[Path], data_location, metadata_locations):

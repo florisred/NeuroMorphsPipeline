@@ -45,7 +45,7 @@ class StimulusPixelWiseDataSource(DataSource):
         self._metadata.process_and_append(metadata)
         self._data = pd.DataFrame(images_flat)
         self._data.index = self._metadata.morph_names
-        self._data = self.data[~self._data.index.duplicated(keep='first')]
+        self._data = self._data[~self._data.index.duplicated(keep='first')]
         self._metadata.synchronize_with_data(self.data)
 
 class DistributedGaborDataSource(DataSource):
@@ -85,6 +85,4 @@ class DistributedGaborDataSource(DataSource):
 
         self._data.index = self._metadata.morph_names
         self._metadata.synchronize_with_data(self._data)
-
-
 

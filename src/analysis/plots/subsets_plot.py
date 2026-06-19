@@ -5,14 +5,14 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
-from utils.utils import find_max_separation
 import pandas as pd
 import seaborn as sns
 
 
-def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=False, **kwargs):
+def create_subset_plots(pca_data_dict: dict[str, PCAData], **kwargs):
     components=[0,1]
     output_dir = kwargs.get('output_dir')
+    with_variability = kwargs.get('with_variability')
 
     if not output_dir or not isinstance(output_dir, Path):
         raise ValueError('output_dir not provided or not a Path object')
@@ -35,7 +35,7 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
 
 
 
-        pc_x, pc_y = components[key][0], components[key][1]
+        pc_x, pc_y = 0,1
         data = pca_data.pca_data
         metadata = pca_data.metadata
         numeric_index = pca_data.get_numeric_index()
@@ -88,27 +88,24 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
                     pass
 
 
-            plt.scatter(plot_coords[:, 0], plot_coords[:, 1],
-                        c=numeric_index, cmap='viridis', s=60, alpha=0.8,
-                        edgecolors='white', zorder=2)
-            is_anchor = metadata.anchor_mask
-            for i in np.where(is_anchor)[0]:
-                name = metadata.morph_names.iloc[i]
-                plt.text(plot_coords[i, 0], plot_coords[i, 1] + 0.5, name, fontsize=10,
-                         fontweight='bold', ha='center',
-                         bbox=dict(facecolor='white', alpha=0.7, edgecolor='black', boxstyle='round'))
-            cbar = plt.colorbar()
-            cbar.set_ticks(numeric_index)
-            cbar.set_ticklabels(metadata.morph_names)
-            plt.xlabel(f'PC{pc_x + 1}')
-            plt.ylabel(f'PC{pc_y + 1}')
-            plt.title(f'{pca_data.name} 2D (PC{pc_x + 1} vs PC{pc_y + 1})')
-            plt.grid(True, linestyle=':', alpha=0.6)
-            plt.savefig(output_dir / f'{pca_data.name}.png')
-            plt.close()
-
-
-        ## ToDO: add correlation between pair_keys!
+        plt.scatter(plot_coords[:, 0], plot_coords[:, 1],
+                    c=numeric_index, cmap='viridis', s=60, alpha=0.8,
+                    edgecolors='white', zorder=2)
+        is_anchor = metadata.anchor_mask
+        for i in np.where(is_anchor)[0]:
+            name = metadata.morph_names.iloc[i]
+            plt.text(plot_coords[i, 0], plot_coords[i, 1] + 0.5, name, fontsize=10,
+                     fontweight='bold', ha='center',
+                     bbox=dict(facecolor='white', alpha=0.7, edgecolor='black', boxstyle='round'))
+        cbar = plt.colorbar()
+        cbar.set_ticks(numeric_index)
+        cbar.set_ticklabels(metadata.morph_names)
+        plt.xlabel(f'PC{pc_x + 1}')
+        plt.ylabel(f'PC{pc_y + 1}')
+        plt.title(f'{pca_data.name} 2D (PC{pc_x + 1} vs PC{pc_y + 1})')
+        plt.grid(True, linestyle=':', alpha=0.6)
+        plt.savefig(output_dir / f'{pca_data.name}.png')
+        plt.close()
 
     curv_output_dir = output_dir / 'curvature_metrics'
     curv_output_dir.mkdir(exist_ok=True)

@@ -47,28 +47,6 @@ def create_name_from_list(
     return final_name
 
 
-def find_max_separation(num_comps, pca_data_dict, filter=None):
-
-    dist_dict = {}
-    for name, pca_data in pca_data_dict.items():
-        if filter is not None and filter not in name:
-            continue
-        dist_dict[name] = {}
-        data_to_use = pca_data.anchors.drop_duplicates()
-        for component_combination in list(combinations(range(data_to_use.shape[1]), num_comps)):
-            anchor_data_filtered_components = data_to_use[list(component_combination)]
-            all_distances = pdist(anchor_data_filtered_components.values)
-            total_separation = all_distances.mean()
-            dist_dict[name][component_combination] = total_separation
-    comp_dict = {}
-    for name, distances in dist_dict.items():
-        max_key = None
-        for key in distances.keys():
-            if max_key is None or distances[key] > distances[max_key]:
-                max_key = key
-        comp_dict[name] = max_key
-    return comp_dict
-
 def find_max_seperation_dataframe(num_comps, pca_dataframe: pd.DataFrame):
     index=pca_dataframe.index
     data_to_use = pca_dataframe.groupby(index).mean()

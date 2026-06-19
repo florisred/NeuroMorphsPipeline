@@ -165,42 +165,6 @@ class Pipeline:
     def create_plots(self, plot_types: list, plot_config: dict):
         self.analyzer.create_plots(plot_types=plot_types, output_dir=self.output_dir, plot_config=plot_config)
 
-
-
-    def create_3d_plots(self):
-        self.analyzer.create_plots(plot_types=['3d'], output_dir=self.output_dir, n_components=3)
-
-    def create_full_rdm_plots(self, n_components = 3, avg_only = True):
-        self.analyzer.create_plots(plot_types=['rdm_full'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
-
-    def create_rdm_plots(self, n_components = 3, avg_only = False):
-        self.analyzer.create_plots(plot_types=['rdm'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
-
-    def create_anchor_rmd_plots(self, n_components = 3, avg_only = True):
-        self.analyzer.create_plots(plot_types = ['anchor_rdm'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
-
-    def create_interactive_plots(self, n_components = 3, avg_only = True):
-        self.analyzer.create_plots(['interactive'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
-
-    def create_distances_plots(self, n_components = 2, avg_only = True):
-        self.analyzer.create_plots(['distances'], output_dir=self.output_dir, n_components=n_components, avg_only=avg_only)
-
-    def create_pair_plots(self, avg_only = True):
-        self.analyzer.create_plots(
-            plot_types=['subsets'], output_dir=self.output_dir, subsets=self.two_photon_pairs, n_components=3, avg_only=avg_only
-        )
-    def create_triplet_plots(self, avg_only = True, show = False, with_variability = False, n_components = 3):
-        self.analyzer.create_plots(plot_types=['subsets'], output_dir=self.output_dir,
-                                   subsets=self.two_photon_triplets, n_components=n_components, avg_only=avg_only, show=show, with_variability=with_variability)
-
-
     def classify(self,):
         self.analyzer.classify()
-
-    def show_explained_variance(self):
-        self.analyzer.create_plots(
-            plot_types=['explained_variance_full'],
-            output_dir=self.output_dir,
-            n_components=8,
-        )
 
