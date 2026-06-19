@@ -53,7 +53,6 @@ def rdm_analysis(pca_data_dict: dict[str, PCAData], **kwargs):
 
     all_rdms = defaultdict(list)
     stb_mtcs = []
-    sbtr_mtcs = defaultdict(list)
 
     # 2. Process each dataset group independently
     for group_name, pca_data_list in analysis_groups.items():
@@ -82,13 +81,6 @@ def rdm_analysis(pca_data_dict: dict[str, PCAData], **kwargs):
                 # Calculate stability (Spearman correlation)
                 stability_matrix[i, j], _ = spearmanr(rdms[n1], rdms[n2])
 
-                # Calculate scaled subtractions
-                normalized_n1 = scale_session(rdms[n1].reshape(-1, 1))
-                normalized_n2 = scale_session(rdms[n2].reshape(-1, 1))
-
-                pair_key = f'{n1.split("_")[0]}-{n2.split("_")[0]}'
-                sbtr_mtcs[pair_key].append((normalized_n1 - normalized_n2).flatten())
-
         # Append only ONCE per group, after the matrix is fully populated
         stb_mtcs.append(stability_matrix)
 
@@ -99,14 +91,6 @@ def rdm_analysis(pca_data_dict: dict[str, PCAData], **kwargs):
         sqr = squareform(avg_rdm)
         nms = np.arange(sqr.shape[0])
         _plot_rdm(sqr, nms, f"avg_{key}", rdm_output_dir, show=show)
-
-    # # 4. Average and Plot Subtraction Matrices
-    # for key, value_list in sbtr_mtcs.items():
-    #     if not value_list: continue
-    #     avg_rdm = np.mean(value_list, axis=0)
-    #     sqr = squareform(avg_rdm)
-    #     nms = np.arange(sqr.shape[0])
-    #     _plot_rdm(sqr, nms, f"subtraction_{key}", rdm_output_dir, full_data=full_data, show=show)
 
     # 5. Average and Plot Stability Matrix
     if stb_mtcs:
