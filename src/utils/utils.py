@@ -329,8 +329,8 @@ def load_metadata_2p(f, labels_list: list[str]):
     """
     raw_metadata_dataframe = pd.DataFrame()
     for metadata_location in labels_list:
-        meta_name = metadata_location.split("/")[-1]
-        metadata_array = np.array(f['y'][metadata_location]).flatten()
+        f_metadata, meta_name = browse_h5_file(metadata_location, f)
+        metadata_array = np.array(f_metadata).flatten()
         raw_metadata_dataframe[meta_name] = metadata_array.astype(str)
     return raw_metadata_dataframe
 
@@ -345,17 +345,27 @@ def load_h5_file(session_dir: Path, data_location: str, labels_list: list[str]) 
     :param labels_list:
     :return: Tuple[raw_data_df: pd.DataFrame, raw_metadata_df: pd.DataFrame]
     """
-    two_photon_folder = session_dir / '2p_data'
-    #two_photon_folder = session_dir
-    file = list(two_photon_folder.glob("*.h5"))
+    h5_folder = session_dir
+    file = list(h5_folder.glob("*.h5"))
     file = [f for f in file if not f.name.startswith('.')]
-    if len(file) != 1: raise AssertionError(f"Need exactly one .hy file in {two_photon_folder}")
+    if len(file) != 1: raise AssertionError(f"Need exactly one .hy file in {h5_folder}")
     f = h5py.File(file[0], 'r')
-    raw_data_df = pd.DataFrame(f[data_location]).dropna(axis=0, how='all')
+    x_h5, loc = browse_h5_file(data_location, f)
+    raw_data_df = pd.DataFrame(x_h5).dropna(axis=0, how='all')
     raw_metadata_df = load_metadata_2p(f, labels_list)
     raw_data_df = raw_data_df.T
     return raw_data_df, raw_metadata_df
 
+def browse_h5_file(data_location: str, file):
+    try:
+        data_split = data_location.split("/")
+        fx=file
+        for loc in data_split:
+            fx=fx[loc]
+        return fx, loc
+    except Exception as e:
+        raise ValueError(
+            f"Could not find the label {data_location} in the h5 file.\n Make sure to split the datasets with a '/'. \nf{e}")
 
 def ori_process_image_names(image_names:list):
     """

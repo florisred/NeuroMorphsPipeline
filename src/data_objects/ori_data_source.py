@@ -68,18 +68,17 @@ class OriDataSource(DataSource):
         return NotImplementedError("Finding stimulus cycles is not implemented in orientation tuning")
 
 class OriTwoPhotonDataSource(OriDataSource):
-    def __init__(self, file_paths: list[Path]):
+    def __init__(self, file_paths: list[Path], data_location, metadata_locations):
         super().__init__(file_paths)
         self._data_type = "OrientationPixelWise"
-        self._labels_list = ['orientation_deg']
-        self._data_location = 'X'
+        self._labels_list = metadata_locations
+        self._data_location = data_location
         self._pca_data = None
 
     def load_data(self):
         data_dfs = []
         for session_dir in self.file_paths:
             raw_data_df, raw_meta_df = load_h5_file(session_dir, self._data_location, self._labels_list)
-            meta = TrialMetadata(raw_data_df)
             meta_df = raw_meta_df.astype(float)
             data = raw_data_df.set_index(meta_df['orientation_deg'])
             data_sorted = data.sort_index()

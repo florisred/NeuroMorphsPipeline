@@ -12,20 +12,22 @@ logger = logging.getLogger(__name__)
 
 class TwoPhotonDataSource(DataSource):
 
-    def __init__(self, file_paths: list[Path], data_location: str):
+    def __init__(self, file_paths: list[Path], data_location: str, metadata_locations:list[str]|None = None):
         super().__init__(file_paths)
         self._data_location = data_location
-        self._labels_list = ['pair_key', 'step_index', 'src_cat', 'dst_cat']
+        if metadata_locations is None:
+            self._labels_list = ['y/pair_key', 'y/step_index', 'y/src_cat', 'y/dst_cat']
+        else:
+            self._labels_list = metadata_locations
         self._data_type = 'TwoPhoton'
 
-    def load_data(self, split: bool = False, seed: int = 42, train_percent = 0.7):
+    def load_data(self, seed: int = 42, train_percent = 0.7):
         """
         Loads the .h5 data from each session and loads them in the metadata file.
         Then, it isolates shared morphs across sessions and interpolates repetitions
         so that every session matches the maximum repetition count for a given morph.
         """
         data_dfs = []
-        self._split = split
         for session_dir in self.file_paths:
             raw_data_df, raw_meta_df = load_h5_file(session_dir, self._data_location, self._labels_list)
             temp_meta = TrialMetadata()
@@ -33,8 +35,6 @@ class TwoPhotonDataSource(DataSource):
             raw_morph_names = temp_meta.morph_names
             temp_meta_df = temp_meta._metadata_df
             raw_data_df.index = raw_morph_names
-            if split: raw_data_df, temp_meta_df = split_morphs(raw_trials=raw_data_df, raw_metadata=temp_meta_df,
-                                                               seed=seed, train_percent=train_percent)
             data_dfs.append(raw_data_df)
             self._metadata.append(temp_meta_df)
         shared_morphs = self.metadata.shared_morphs
