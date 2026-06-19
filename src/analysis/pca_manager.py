@@ -134,6 +134,10 @@ class PCAManager:
         :param fit_data: dataframe of all data used to fit the pca model
         :return: PCAData object, with the TrialMetadata Object and the transformed data
         """
+
+        if n_components == 'max':
+            if fit_data is not None: n_components=min(fit_data.shape)
+            else: n_components=min(all_data.shape)
         pca_model = PCA(n_components=n_components)
         fit_data = None
         if fit_data is not None: # if fit_data is none, just fit the data on all the data!

@@ -74,6 +74,8 @@ class PCAData:
         return self._pca_type
 
     def get_data_components(self, n_components: int):
+        if n_components == 'max':
+            return self.pca_data
         return self.pca_data.iloc[:, :n_components]
 
     def get_numeric_index(self):
