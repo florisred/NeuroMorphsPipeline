@@ -104,7 +104,6 @@ if __name__ == "__main__":
     nm.create_plots(
         plot_types = [
             'interactive',
-            'distances',
             'subsets',
             '3d',
             'rdm',

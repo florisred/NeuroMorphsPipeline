@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Union
 
 from data_objects.data_source import DataSource
 from analysis.pca_manager import PCAManager
-from analysis.plots import distances, interactive, rdm_plot, subsets_plot, explained_variance, plot_3d  # Import our new standalone plots module
+from analysis.plots import interactive, rdm_plot, subsets_plot, explained_variance, plot_3d  # Import our new standalone plots module
 from analysis.classification.classify import  classify as classify_data
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,6 @@ class Analyzer:
     # Which plot type is which function
     PLOT_REGISTRY = {
         'interactive': interactive.create_interactive_plot,
-        'distances': distances.calculate_distances,
         'subsets': subsets_plot.create_subset_plots,
         '3d': plot_3d.create_3d_plot,
         'rdm': rdm_plot.rdm_analysis,
@@ -30,7 +29,6 @@ class Analyzer:
     # what type of PCA each plot type requires
     PCA_REQUIREMENTS = {
         'interactive': ['full'],
-        'distances': ['pairs'],
         'subsets': ['subsets'],
         'rdm': ['subsets'],
         'rdm_full': ['full'],

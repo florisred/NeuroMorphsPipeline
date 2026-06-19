@@ -11,7 +11,7 @@ import seaborn as sns
 
 
 def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=False, **kwargs):
-    components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=2, filter='subset')
+    components=[0,1]
     output_dir = kwargs.get('output_dir')
 
     if not output_dir or not isinstance(output_dir, Path):
@@ -24,7 +24,7 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], with_variability=Fals
             continue
         data_source_name = pca_data.data_source
         pca_data = pca_data.normalize()
-        pair_key_curves = calculate_curvature(pca_data, components = components[key])
+        pair_key_curves = calculate_curvature(pca_data, components = components)
         for pair_key, curve_metric in pair_key_curves.items():
             ds_pair_data = pair_key_curvatures[data_source_name].get(pair_key, None)
             if ds_pair_data is None:

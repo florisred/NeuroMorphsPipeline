@@ -17,13 +17,13 @@ def create_interactive_plot(pca_data_dict: dict[str, PCAData], **kwargs):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Extract indices for readability
-    components = find_max_separation(pca_data_dict=pca_data_dict, num_comps=3, filter='full')
+    #components =  [0,1,2]#find_max_separation(pca_data_dict=pca_data_dict, num_comps=3, filter='full')
 
     for k, pca_data in pca_data_dict.items():
         if 'full' not in k: continue
         data = pca_data.pca_data
         metadata = pca_data.metadata
-        ix, iy, iz = components[k]
+        ix, iy, iz = [0,1,2]
 
         for search_term in metadata.get_pair_keys():
             matches, num_matches = metadata.find_matching_pair_keys(search_term)

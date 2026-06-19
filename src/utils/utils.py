@@ -48,6 +48,7 @@ def create_name_from_list(
 
 
 def find_max_separation(num_comps, pca_data_dict, filter=None):
+
     dist_dict = {}
     for name, pca_data in pca_data_dict.items():
         if filter is not None and filter not in name:
