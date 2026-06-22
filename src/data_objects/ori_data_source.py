@@ -6,7 +6,7 @@ from data_objects.data_source import DataSource
 from data_objects.pca_data import PCAData
 from data_objects.trial_metadata import OriMetaData
 from utils.utils import load_h5_file, scale_session, load_images, ori_process_image_names
-from gabor_helper import process_gabor, create_distributed_gabor
+from src.helper.gabor_helper import process_gabor, create_distributed_gabor
 import pandas as pd
 import numpy.typing as npt
 

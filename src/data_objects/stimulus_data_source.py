@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from src.utils.utils import process_image_names, load_images
-from gabor_helper import create_distributed_gabor, process_gabor
+from src.helper.gabor_helper import create_distributed_gabor, process_gabor
 
 class StimulusGaborDataSource(DataSource):
     def __init__(self, file_paths: list[Path], gabor_params: dict, output_dir: Path):
