@@ -94,7 +94,7 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], **kwargs):
         is_anchor = metadata.anchor_mask
         for i in np.where(is_anchor)[0]:
             name = metadata.morph_names.iloc[i]
-            plt.text(plot_coords[i, 0], plot_coords[i, 1] + 0.5, name, fontsize=10,
+            plt.text(plot_coords[i, 0], plot_coords[i, 1] + 0.1, name, fontsize=10,
                      fontweight='bold', ha='center',
                      bbox=dict(facecolor='white', alpha=0.7, edgecolor='black', boxstyle='round'))
         cbar = plt.colorbar()
@@ -191,29 +191,6 @@ def calculate_curvature(pca_data: PCAData, components: tuple[int, int]):
         pair_key_curvatures[pair_key] = distances_final
 
     return pair_key_curvatures
-
-
-
-
-"""
-        
-
-        p0 = anchors_unique.loc[src_cat].values
-        p1 = anchors_unique.loc[dst_cat].values
-        line_vec = p1 - p0
-        L2_sq = np.sum(line_vec ** 2)
-        L = np.sqrt(L2_sq)
-        d = L / 2
-        points = data.loc[pair_key_mask, [0, 1]].values  # Assuming cols 0 and 1
-        w = points - p0  # Vector from p0 to p3s
-        a = np.dot(w, line_vec) / L
-        b = (line_vec[0] * w[:, 1] - line_vec[1] * w[:, 0]) / L
-        denominator = (a - d) ** 2 - d ** 2
-        curve_metric = np.divide(b, denominator, out=np.zeros_like(b), where=denominator != 0)
-        curve_metric = np.abs(curve_metric)
-        pair_key_curvatures[pair_key] = ppd
-
-"""
 
 
 
