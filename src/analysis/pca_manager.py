@@ -86,6 +86,7 @@ class PCAManager:
                         fit_data=temp_ds.data, metadata=temp_ds.metadata, pca_type='subsets'
                     ) # ds for all data, temp_ds for subset data
                     pca_data.set_name(pca_name)
+                    pca_data.sort_subsets(subset)
                     self.cache[pca_name] = pca_data
 
 
