@@ -9,8 +9,7 @@ import json
 from data_objects.two_photon_data_source import TwoPhotonDataSource
 from analysis.analyzer import Analyzer
 from data_objects.stimulus_data_source import StimulusGaborDataSource, StimulusPixelWiseDataSource, DistributedGaborDataSource
-
-#temp:
+from src.analysis.plots.rdm_plot import rdm_analysis_full
 from src.analysis.plots.ori_ring_plot import ori_ring_plot
 
 class Pipeline:
@@ -21,8 +20,6 @@ class Pipeline:
     def __init__(self, data_folder:str|None = None):
 
         # set preliminary vars
-        self.two_photon_pairs = None
-        self.two_photon_triplets = None
         project_root = Path(__file__).parent.parent
         config_dir = project_root / "config"
         settings_file = config_dir / "settings.json"
@@ -148,8 +145,6 @@ class Pipeline:
                 pca_data = ori_data_source.pca_data_object
                 pca_data.set_name(key)
                 pca_data_dict[key] = pca_data
-
-            from src.analysis.plots.rdm_plot import rdm_analysis_full
             kwargs = {}
             kwargs['output_dir'] = Path(
                 f'{self.data_dir}/output/plots/ori_plots/')
