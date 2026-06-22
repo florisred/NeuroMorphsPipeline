@@ -1,11 +1,8 @@
-from pandas.core.indexes.base import maybe_extract_name
-
 from data_objects.trial_metadata import TrialMetadata
 import numpy.typing as npt
 import pandas as pd
 import numpy as np
 import copy
-
 
 class PCAData:
     def __init__(self, pca_type: str, pca_output: npt.NDArray, metadata: TrialMetadata, morph_names: pd.Index, explained_variance: npt.NDArray = None):
@@ -112,3 +109,46 @@ class PCAData:
 
         self._grouped_pca_data = self._grouped_pca_data.iloc[new_indices]
         self.metadata.reindex(new_indices, allow_mismatch=True)
+
+
+    def sort_subsets(self, subset:list):
+        anchor_list = []
+        for pair_key in subset:
+            for anchs in pair_key.split('__'):
+                anchor_list.append(anchs)
+        anchor_array = np.array(anchor_list)
+        anchors = np.unique(anchor_array)
+        anchors = np.append(anchors, anchors[0])
+        morph_names = np.unique(self.metadata.morph_names.to_numpy())
+        final_sequence = [anchors[0]]
+        for end_anchor in anchors[1:]:
+            begin_anchor = final_sequence[-1]
+            valid_morphs = []
+            for morph_name in morph_names:
+                if begin_anchor in morph_name and end_anchor in morph_name:
+                    valid_morphs.append(morph_name)
+
+            split_name = valid_morphs[0].split('_')
+            begin_anchor_idx = split_name.index(begin_anchor)
+            dist_from_begin_anchor = 1-float(split_name[begin_anchor_idx+1])
+            if dist_from_begin_anchor >0.5:
+                valid_morphs.reverse()
+            for morph_name in valid_morphs:
+                final_sequence.append(morph_name)
+            final_sequence.append(end_anchor)
+        final_sequence.pop(-1)
+        final_sequence = np.array(final_sequence)
+
+        all_morph_names = np.array(self.metadata.get_morph_names(as_list=True))
+        name_to_long_idx = {}
+        for i, name in enumerate(all_morph_names):
+            if name not in name_to_long_idx:
+                name_to_long_idx[name] = i  # keep first occurrence only
+        reorder_indices = [name_to_long_idx[name] for name in final_sequence]
+        self.reindex(reorder_indices)
+
+
+    def reindex(self, reorder_indices: list):
+        self._grouped_pca_data = self._grouped_pca_data.iloc[reorder_indices]
+        self.metadata.reindex(reorder_indices, allow_mismatch=True)
+
