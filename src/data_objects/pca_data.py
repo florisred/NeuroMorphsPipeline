@@ -1,3 +1,5 @@
+from pandas.core.indexes.base import maybe_extract_name
+
 from data_objects.trial_metadata import TrialMetadata
 import numpy.typing as npt
 import pandas as pd
@@ -42,7 +44,16 @@ class PCAData:
 
     @property
     def trial_data(self) -> pd.DataFrame:
-        if self._normalized: return (self._pca_df - self._pca_df.mean()) / self._pca_df.std()
+        if self._normalized:
+            pca_df = self._pca_df.copy()
+            mean_grouped_data = self._grouped_pca_data.mean()
+            mean_grouped_data.index = pca_df.columns
+            std = self._grouped_pca_data.std()
+            std.index = pca_df.columns
+
+            norm = (pca_df - mean_grouped_data) / std
+            return norm
+
         else: return self._pca_df
 
     @property
