@@ -12,7 +12,7 @@ import seaborn as sns
 def create_subset_plots(pca_data_dict: dict[str, PCAData], **kwargs):
     components=[0,1]
     output_dir = kwargs.get('output_dir')
-    with_variability = kwargs.get('with_variability')
+    with_variability = kwargs.get('subsets_with_variability')
 
     if not output_dir or not isinstance(output_dir, Path):
         raise ValueError('output_dir not provided or not a Path object')
