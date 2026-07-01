@@ -123,7 +123,8 @@ class PCAManager:
             explained_variance = explained_variance,
             metadata = metadata,
             pca_type = pca_type,
-            morph_names = all_data.index
+            morph_names = all_data.index,
+            raw_data = all_data
         )
         pca_data.metadata.synchronize_with_data(combined_df=pca_data.pca_data)
         pca_data.sort()

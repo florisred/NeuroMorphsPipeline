@@ -5,8 +5,9 @@ import numpy as np
 import copy
 
 class PCAData:
-    def __init__(self, pca_type: str, pca_output: npt.NDArray, metadata: TrialMetadata, morph_names: pd.Index, explained_variance: npt.NDArray = None):
+    def __init__(self, pca_type: str, pca_output: npt.NDArray, metadata: TrialMetadata, morph_names: pd.Index, raw_data: pd.DataFrame, explained_variance: npt.NDArray = None):
         self._pca_output = pca_output
+        self.raw_data = raw_data
         self.metadata = metadata
         self.explained_variance = explained_variance
         self._pca_df = pd.DataFrame(pca_output, index=metadata.morph_names, columns = [f'Component{i+1}' for i in range(pca_output.shape[1])])
@@ -80,6 +81,16 @@ class PCAData:
     @property
     def pca_type(self) -> str:
         return self._pca_type
+
+    def mean(self):
+        self_copy = self.copy()
+        normalized = self_copy._normalized
+        self_copy._normalized = False
+        self_copy._pca_df = self_copy._pca_df.groupby(by=self_copy._pca_df.index).mean()
+        self_copy._normalized = normalized
+        self_copy.metadata.synchronize_with_data(self_copy.pca_data)
+
+        return self_copy
 
     def get_data_components(self, n_components: int):
         if n_components == 'max':
