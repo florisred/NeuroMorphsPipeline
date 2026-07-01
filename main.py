@@ -55,6 +55,7 @@ if __name__ == "__main__":
             'show' : False, # decides if the plots are shown in the IDE or not, they are always saved
             'subsets_n' : 3, # decides the number of anchors in the subsets plot, use 3 for the triplets
             'subsets_with_variability' : True, # if there are multiple trials, plot all of them next to the average
+            'n_components' : 10
         }
     )
 

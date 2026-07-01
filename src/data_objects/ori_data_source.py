@@ -147,7 +147,6 @@ class OriDistGaborDataSource(OriDataSource):
             rf_dst_file = self.rf_dstr_path / 'rf_dstr.csv'
             rf_dstr = pd.read_csv(rf_dst_file)['RF_size_px']
             rf_dstr = rf_dstr * rf_size_multiplier
-            print(rf_size_multiplier, np.mean(rf_dstr))
             rf_int = rf_dstr.astype(int)
             gabor_params['receptive_field_sizes'] = rf_int.to_list()
         else:
