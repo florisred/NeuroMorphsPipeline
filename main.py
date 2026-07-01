@@ -27,6 +27,7 @@ if __name__ == "__main__":
             #'ori_PixelWise',
         ],
         n_simulated_neurons_GaborNet = 5612,
+        recalculate_gabornet = False,
         n_repeat_trials=7,
         h5_locations_textures = {
             'data':'X',

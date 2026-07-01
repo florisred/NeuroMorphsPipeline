@@ -11,9 +11,9 @@ from src.utils.utils import scale_session
 
 
 
-def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir: Path, n_trials = 7, save_and_load=True) -> pd.DataFrame:
-        if save_and_load:
-            gabor_save_file = output_dir / "gabor_distributed_normalized_features_stimuli.npy"
+def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir: Path, n_trials = 1, recalculate=False) -> pd.DataFrame:
+        gabor_save_file = output_dir / "GaborNetCalculatedCache.npy"
+        if not recalculate:
             if Path.exists(gabor_save_file):
                 print('GaborNet Feature Matrix found. Loading...')
                 return pd.DataFrame(np.load(gabor_save_file))
@@ -82,10 +82,17 @@ def create_distributed_gabor(images: npt.NDArray, gabor_params: dict, output_dir
                     trial_activation /= 100.0
                     noise = np.random.normal(0, sensor_noise_std)
                     final_feature_matrix[img_num_after_noise + trial, j] = max(0, trial_activation + noise)
+                # for trial in range(n_trials):
+                #     mu = base_activation * 100  # Your scaling factor
+                #
+                #     # --- NOISE DISABLED HERE ---
+                #     # Instead of sampling randomly, just assign the clean mean directly
+                #     trial_activation = mu / 100.0
+                #
+                #     final_feature_matrix[img_num_after_noise + trial, j] = max(0, trial_activation)
         print("Scaling and saving features...")
         normalized_features = scale_session(final_feature_matrix)
-        if save_and_load:
-            np.save(gabor_save_file, normalized_features)
+        np.save(gabor_save_file, normalized_features)
 
         return pd.DataFrame(normalized_features)
 
