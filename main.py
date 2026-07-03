@@ -60,23 +60,4 @@ if __name__ == "__main__":
     )
 
 
-    #nm.create_interactive_plots()
-    #nm.create_3d_plots()
 
-    #nm.show_explained_variance()
-    #
-    # nm.classify()
-    #
-    #nm.create_triplet_plots(show=True, with_variability=True)
-    #
-    #nm.create_rdm_plots(n_components='max')
-    #
-    # nm.create_distances_plots()
-    #
-    #nm.create_interactive_plots()
-    #
-    # nm.create_anchor_rmd_plots(n_components='max')
-    # nm.create_full_rdm_plots(n_components='max')
-
-
-# ToDO: Hoe ver het allemaal van het midden afzit
