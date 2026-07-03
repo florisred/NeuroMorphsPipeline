@@ -49,29 +49,13 @@ class TwoPhotonDataSource(DataSource):
             for morph, count in rep_counts.items():
                 max_reps_per_morph[morph] = max(max_reps_per_morph.get(morph, 0), count)
 
-
-        def interpolate_trials(morph_df, target_reps):
-            n_current = len(morph_df)
-            if n_current == target_reps:
-                return morph_df.reset_index(drop=True)
-            if n_current == 1:
-                return pd.concat([morph_df] * target_reps).reset_index(drop=True)
-            old_idx = np.linspace(0, 1, n_current)
-            new_idx = np.linspace(0, 1, target_reps)
-            temp_df = morph_df.copy()
-            temp_df.index = old_idx
-            combined_idx = np.union1d(old_idx, new_idx)
-            interp_df = temp_df.reindex(combined_idx).interpolate(method='index')
-            result_df = interp_df.loc[new_idx].copy()
-            result_df.index = range(target_reps)
-            return result_df
         aligned_data_dfs = []
         for p_df in processed_sessions:
             session_morph_dfs = []
             for morph in sorted(list(shared_morphs)):
                 morph_df = p_df.loc[[morph]]
                 target_reps = max_reps_per_morph[morph]
-                interp_df = interpolate_trials(morph_df, target_reps)
+                interp_df = self._interpolate_trials(morph_df, target_reps)
                 interp_df['morph_name'] = morph
                 session_morph_dfs.append(interp_df)
             session_aligned = pd.concat(session_morph_dfs, ignore_index=True)
@@ -85,4 +69,19 @@ class TwoPhotonDataSource(DataSource):
         self._data = combined_df
         logger.info(f"Loaded {len(combined_df)} morph trials with {combined_df.shape[1]} neurons")
 
-
+    @staticmethod
+    def _interpolate_trials(morph_df, target_reps):
+        n_current = len(morph_df)
+        if n_current == target_reps:
+            return morph_df.reset_index(drop=True)
+        if n_current == 1:
+            return pd.concat([morph_df] * target_reps).reset_index(drop=True)
+        old_idx = np.linspace(0, 1, n_current)
+        new_idx = np.linspace(0, 1, target_reps)
+        temp_df = morph_df.copy()
+        temp_df.index = old_idx
+        combined_idx = np.union1d(old_idx, new_idx)
+        interp_df = temp_df.reindex(combined_idx).interpolate(method='index')
+        result_df = interp_df.loc[new_idx].copy()
+        result_df.index = range(target_reps)
+        return result_df
