@@ -159,7 +159,8 @@ class Pipeline:
 
 
     def create_plots(self, plot_types: list, plot_config: dict):
-        self.analyzer.create_plots(plot_types=plot_types, output_dir=self.output_dir, plot_config=plot_config)
+        plot_config['output_dir'] = self.output_dir
+        self.analyzer.create_plots(plot_types=plot_types, plot_config=plot_config)
 
     def classify(self,):
         self.analyzer.classify()
