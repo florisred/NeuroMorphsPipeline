@@ -32,7 +32,7 @@ class PCAManager:
             logger.warning(f"Overwriting datasource: {key}")
         self.datasources[key] = data_source
 
-    def prepare_data(self, pca_types: tuple[str], n_components: Optional[int] = None, subsets_n: Optional[int] = None):
+    def prepare_data(self, pca_types: tuple[str], n_components: Optional[int] = None, subsets_n: Optional[int] = None, pca_on_anchors: bool = False):
         """
         Ensures the cache contains the requested pca_type for all datasources.
 
