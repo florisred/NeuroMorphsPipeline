@@ -41,15 +41,15 @@ if __name__ == "__main__":
 
     nm.create_plots(
         plot_types = [
-            #'interactive',
-            #'subsets',
-            #'3d',
-            #'rdm',
-            #'rdm_full',
-            #'anchor_rdm',
-            'classification',
-            'explained_variance_full',
-            'explained_variance_subsets'
+            'interactive',
+            'subsets',
+            '3d',
+            'rdm_subsets',
+            'rdm_full',
+            'anchor_rdm',
+            # 'classification',
+            # 'explained_variance_full',
+            # 'explained_variance_subsets'
         ],
         plot_config = {
             'show' : False, # decides if the plots are shown in the IDE or not, they are always saved

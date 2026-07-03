@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Union
 
 from data_objects.data_source import DataSource
 from analysis.pca_manager import PCAManager
-from analysis.plots import interactive, rdm_plot, subsets_plot, explained_variance, plot_3d  # Import our new standalone plots module
+from analysis.plots import interactive, rdm_plot, subsets_plot, explained_variance, plot_3d, rdm_plot_new # Import our new standalone plots module
 from analysis.classification.classify import  classify as classify_data
 
 logger = logging.getLogger(__name__)
@@ -19,9 +19,9 @@ class Analyzer:
         'interactive': interactive.create_interactive_plot,
         'subsets': subsets_plot.create_subset_plots,
         '3d': plot_3d.create_3d_plot,
-        'rdm': rdm_plot.rdm_analysis,
-        'rdm_full': rdm_plot.rdm_analysis_full,
-        'anchor_rdm': rdm_plot.anchor_rdm,
+        'rdm_subsets': rdm_plot_new.rdm_analysis_subsets,
+        'rdm_full': rdm_plot_new.rdm_analysis_full,
+        'anchor_rdm': rdm_plot_new.rdm_analysis_anchor,
         'classification': classify_data,
         'explained_variance_full': explained_variance.plot_variance,
         'explained_variance_subsets': explained_variance.plot_variance
@@ -30,7 +30,7 @@ class Analyzer:
     PCA_REQUIREMENTS = {
         'interactive': ['full'],
         'subsets': ['subsets'],
-        'rdm': ['subsets'],
+        'rdm_subsets': ['subsets'],
         'rdm_full': ['full'],
         'anchor_rdm': ['anchors'],
         'explained_variance_full': ['full'],
