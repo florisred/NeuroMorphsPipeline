@@ -138,5 +138,6 @@ class PCAManager:
             raw_data = all_data
         )
         pca_data.metadata.synchronize_with_data(combined_df=pca_data.pca_data)
-        pca_data.sort()
+        if sort:
+            pca_data.sort()
         return pca_data
