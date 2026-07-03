@@ -50,20 +50,12 @@ class Analyzer:
     def create_plots(
             self,
             plot_types: Union[List[str], Tuple[str]],
-            output_dir: Path,
             plot_config: dict,
 
     ):
         subsets_n = plot_config.get('subsets_n', 3)
         n_components = plot_config.get('n_components', 'max')
-        show = plot_config.get('show', False)
-        subsets_with_variability = plot_config.get('subsets_with_variability', True)
-
-        plot_config['output_dir'] = output_dir
-
-        #params = {k: v for k, v in locals().items() if k != 'self'}
-
-        output_dir.mkdir(parents=True, exist_ok=True)
+        plot_config['output_dir'].mkdir(parents=True, exist_ok=True)
 
         required_pca_types = {tuple(self.PCA_REQUIREMENTS[p]) for p in plot_types if p in self.PCA_REQUIREMENTS}
         for req_type in required_pca_types:
