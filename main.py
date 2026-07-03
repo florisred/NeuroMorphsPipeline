@@ -12,7 +12,7 @@ if __name__ == "__main__":
     """
 
     nm = Pipeline(
-        data_folder= "/home/protred/Documents/neuro_texmorphs/data/", # texture
+        data_folder= "/Users/floris/Documents/neuro_texmorphs/data", # texture
         # data_folder = ""/home/protred/Documents/OrientationData/Ori_NeuralData/Ori_Data/" # orientation data
     )
     nm.load_data_sources(
