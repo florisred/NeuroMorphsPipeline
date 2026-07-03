@@ -1,6 +1,5 @@
 from pathlib import Path
 from warnings import warn
-
 from analysis.plots.ori_ring_plot import ori_explained_variance_plot
 from data_objects.ori_data_source import OriTwoPhotonDataSource, OriPixeLWiseDataSource, OriGaborDataSource, \
     OriDistGaborDataSource
@@ -92,7 +91,7 @@ class Pipeline:
                 gabor_params=self.settings["gabor_params"],
                 output_dir=self.data_dir / 'output',
             )
-            gabor_net.load_data(n_neurons=n_simulated_neurons_GaborNet,n_trials=n_repeat_trials)
+            gabor_net.load_data(n_neurons=n_simulated_neurons_GaborNet,n_trials=n_repeat_trials, recalculate=recalculate_gabornet)
             self.analyzer.load_datasource(gabor_net)
 
         if 'PixelWise' in sources:
