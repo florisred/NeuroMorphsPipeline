@@ -46,10 +46,16 @@ class PCAManager:
         for key, ds in self.datasources.items():
             # if the pca_type is full, make sure that it has that
             if 'full' in pca_types:
-                pca_name = f'{key}_full'
+
                 if pca_name not in self.cache:
+                    if pca_on_anchors:
+                        fit_data = ds.anchors
+                        pca_name = f'{key}AnchorSpace_full'
+                    else:
+                        fit_data = ds.data
+                        pca_name = f'{key}_full'
                     pca_data = self.run_pca(
-                        all_data=ds.data, fit_data=ds.data,
+                        all_data=ds.data, fit_data=fit_data,
                         n_components=comps, metadata=ds.metadata, pca_type='full'
                     ) # fits on the anchors only.
                     pca_data.set_name(pca_name)
@@ -59,9 +65,11 @@ class PCAManager:
             if 'anchors' in pca_types:
                 pca_name = f'{key}_anchors'
                 if pca_name not in self.cache:
+                    metadata=ds.metadata.copy()
+                    metadata.apply_mask(metadata.anchor_mask)
                     pca_data = self.run_pca(
-                        all_data=ds.data, fit_data=ds.anchors,
-                        n_components=comps, metadata=ds.metadata, pca_type='anchors'
+                        all_data=ds.anchors, fit_data=ds.anchors,
+                        n_components=comps, metadata=metadata, pca_type='anchors', sort=False
                     )
                     pca_data.set_name(pca_name)
                     self.cache[pca_name] = pca_data
@@ -74,16 +82,19 @@ class PCAManager:
                 for k in keys_to_drop: self.cache.pop(k)
 
                 for subset in subs:
-                    pca_name = f'{key}_{create_name_from_list(subset)}'
-                    if pca_name in self.cache: continue
-                    logger.info(f"Creating PCA for subset {key} - {pca_name}")
-
                     temp_ds = ds.copy()
                     temp_ds.filter_transitions(subset)
-
+                    if pca_on_anchors:
+                        fit_data = temp_ds.anchors
+                        pca_name = f'{key}AnchorSpace_{create_name_from_list(subset)}'
+                    else:
+                        fit_data = temp_ds.data
+                        pca_name = f'{key}_{create_name_from_list(subset)}'
+                    if pca_name in self.cache: continue
+                    logger.info(f"Creating PCA for subset {key}AnchorSpace - {pca_name}")
                     pca_data = self.run_pca(
                         all_data=temp_ds.data, n_components=comps,
-                        fit_data=temp_ds.data, metadata=temp_ds.metadata, pca_type='subsets'
+                        fit_data=fit_data, metadata=temp_ds.metadata, pca_type='subsets'
                     ) # ds for all data, temp_ds for subset data
                     pca_data.set_name(pca_name)
                     pca_data.sort_subsets(subset)

@@ -55,12 +55,14 @@ class Analyzer:
     ):
         subsets_n = plot_config.get('subsets_n', 3)
         n_components = plot_config.get('n_components', 'max')
+        pca_on_anchors = plot_config.get('PCA_on_anchors', False)
         plot_config['output_dir'].mkdir(parents=True, exist_ok=True)
 
         required_pca_types = {tuple(self.PCA_REQUIREMENTS[p]) for p in plot_types if p in self.PCA_REQUIREMENTS}
         for req_type in required_pca_types:
             logger.info(f'Loading PCA data for {req_type}')
-            self.pca_manager.prepare_data(pca_types=req_type, n_components=n_components, subsets_n=subsets_n)
+            self.pca_manager.prepare_data(pca_types=req_type, n_components=n_components,
+                                          subsets_n=subsets_n, pca_on_anchors=pca_on_anchors)
 
         for plot_type in plot_types:
             plot_func = self.PLOT_REGISTRY.get(plot_type)
