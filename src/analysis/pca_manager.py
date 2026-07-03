@@ -102,7 +102,7 @@ class PCAManager:
 
 
     @staticmethod
-    def run_pca(pca_type: str, metadata: TrialMetadata, all_data: pd.DataFrame, n_components: int, fit_data: pd.DataFrame=None):
+    def run_pca(pca_type: str, metadata: TrialMetadata, all_data: pd.DataFrame, n_components: int, fit_data: pd.DataFrame=None, sort=True):
         """
         :param pca_type: type of pca used, used for identification later on
         :param metadata: TrialMetadata object
