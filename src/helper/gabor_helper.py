@@ -38,7 +38,22 @@ def _process_single_image(
         # This prevents background pixels from diluting localized feature activations
         base_activation = np.max(magnitude)
 
-        mu = base_activation * 100
+        # NORMALIZE: divide by this neuron's own kernel energy so that
+        # neurons with different receptive-field sizes / wavelengths / gammas
+        # produce comparably-scaled activations before the Poisson step.
+        # Using the L2 norm of the even kernel (energy of the filter itself)
+        # as the per-neuron normalizer.
+        kernel_energy = neuron_params.get("kernel_energy")
+        if kernel_energy is None:
+            kernel_energy = np.sqrt(np.sum(neuron_params["kernel_even"] ** 2))
+            neuron_params["kernel_energy"] = kernel_energy  # cache for reuse
+
+        if kernel_energy > 0:
+            normalized_activation = base_activation / kernel_energy
+        else:
+            normalized_activation = 0.0
+
+        mu = normalized_activation * 50
         if mu > 0:
             poisson_counts = np.random.poisson(mu / fano_factor, size=n_trials)
             trial_activations = poisson_counts.astype(float) * fano_factor
