@@ -64,29 +64,41 @@ def create_distributed_gabor(images: np.ndarray, gabor_params: dict, output_dir:
 
     # Build neuron parameters AND precompute Gabor kernels
     print("Generating neurons and precomputing Gabor kernels...")
+    # Create the parameters for each neuron
     neuron_param_dict = {}
+    img_shape = images[0].shape
+
     for i in range(n_neurons):
         neuron_param_dict[i] = {}
         orientation = np.random.choice(orientations, 1, p=orientation_probs)[0]
-        wavelength = random.choice(wavelengths)
-
         neuron_param_dict[i]["orientation"] = orientation
-        neuron_param_dict[i]["wavelength"] = wavelength
         neuron_param_dict[i]["gamma"] = gamma
 
-        # Receptive field logic
-        while True:
-            receptive_field_size = random.choice(receptive_field_sizes) * 4
-            img_shape = images[0].shape
-            if receptive_field_size < min(img_shape) / 2:
-                break
+        # 1. Assign wavelength first so we know the required minimum kernel size
+        wavelength = random.choice(wavelengths)
+        neuron_param_dict[i]["wavelength"] = wavelength
+        ksize = int(wavelength * 2) | 1
+
+        # 2. Find an empirical RF size that can actually fit this specific kernel
+        # and safely fit within the image boundaries
+        valid_rf_sizes = [rf for rf in receptive_field_sizes if ksize <= rf < min(img_shape)]
+
+        if not valid_rf_sizes:
+            # Fallback if the image itself is too small for the kernel
+            raise ValueError(f"Image size {img_shape} is too small for a Gabor kernel of size {ksize}")
+
+        receptive_field_size = random.choice(valid_rf_sizes)
+
+        # 3. Locate the receptive field on the image
         while True:
             receptive_field_location = (np.random.randint(0, img_shape[0]), np.random.randint(0, img_shape[1]))
             x1 = receptive_field_location[1] - receptive_field_size // 2
             x2 = x1 + receptive_field_size
             y1 = receptive_field_location[0] - receptive_field_size // 2
             y2 = y1 + receptive_field_size
-            if 0 <= x1 < x2 <= img_shape[1] and 0 <= y1 < y2 <= img_shape[0]:
+
+            # Ensure the bounding box rests entirely inside the image frame
+            if 0 <= x1 and x2 <= img_shape[1] and 0 <= y1 and y2 <= img_shape[0]:
                 break
 
         neuron_param_dict[i]["receptive_field"] = [[x1, y1], [x2, y2]]

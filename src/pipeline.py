@@ -90,7 +90,7 @@ class Pipeline:
                 gabor_params=gabornet_params,
                 output_dir=self.data_dir / 'output',
             )
-            gabor_net.load_data()
+            gabor_net.load_data(rf_size_multiplier=0.5)
             self.analyzer.load_datasource(gabor_net)
 
         if 'PixelWise' in sources:
