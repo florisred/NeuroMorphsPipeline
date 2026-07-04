@@ -112,6 +112,10 @@ def load_images(image_dir: Path, flat: bool = False) -> tuple[npt.NDArray[np.flo
 
     return np.array(images), image_names
 
+def format_seconds(secs):
+    mins, secs = divmod(int(secs), 60)
+    return f"{mins:02d}:{secs:02d}"
+
 def load_metadata_2p(f, labels_list: list[str]):
     """
     helper function of load_h5_file. the loaded file, and the labels, and returns a dataframe with the correct columns

@@ -1,8 +1,6 @@
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from pathlib import Path
-from scipy.spatial.distance import pdist, squareform
 from scipy.stats import spearmanr
 from collections import defaultdict
 from utils.utils import scale_session
@@ -10,6 +8,7 @@ from data_objects.pca_data import PCAData
 import rsatoolbox.data as rsd
 import rsatoolbox.rdm as rdr
 import rsatoolbox.vis as rdv
+import rsatoolbox.data.noise as rsn
 
 def rdm_analysis_anchor(
         pca_data_dict: dict[str, PCAData],
@@ -71,16 +70,22 @@ def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
             }
 
 
-            if data_source in ['TwoPhoton', 'DistributedGaborStimulus']:
+            if data_source in ['TwoPhoton', 'GaborNet']:
                 dataset = rsd.Dataset(
                     measurements=numpy_data,
                     obs_descriptors=obs_descriptors
+                )
+                noise_precision = rsn.prec_from_unbalanced(
+                    dataset,
+                    obs_desc='conds',
+                    method='shrinkage_diag'
                 )
                 rdm_cv = rdr.calc_rdm(
                     dataset,
                     method='crossnobis',
                     descriptor='conds',
                     cv_descriptor='sessions',
+                    noise=noise_precision
                 )
             else:
                 dataset = rsd.Dataset(
@@ -139,7 +144,10 @@ def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
 
     # Average stability matrix across all 24 cycles
     if all_stability_matrices:
-        avg_matrix = np.mean(all_stability_matrices, axis=0)
+        safe_matrices = np.clip(all_stability_matrices, -0.9999, 0.9999)
+        z_matrices = np.arctanh(safe_matrices)
+        avg_z_matrix = np.mean(z_matrices, axis=0)
+        avg_matrix = np.tanh(avg_z_matrix)
         _plot_stability(
             avg_matrix,
             stability_names,
@@ -170,16 +178,22 @@ def _rdm_analysis(
         }
 
 
-        if data_source in ['TwoPhoton', 'DistributedGaborStimulus']:
+        if data_source in ['TwoPhoton', 'GaborNet']:
             dataset = rsd.Dataset(
                 measurements=numpy_data,
                 obs_descriptors=obs_descriptors
+            )
+            noise_precision = rsn.prec_from_unbalanced(
+                dataset,
+                obs_desc='conds',
+                method='shrinkage_diag'
             )
             rdm_cv = rdr.calc_rdm(
                 dataset,
                 method='crossnobis',
                 descriptor='conds',
-                cv_descriptor='sessions',  # <-- pass the KEY, not the array
+                cv_descriptor='sessions',
+                noise=noise_precision
             )
         else:
             dataset = rsd.Dataset(

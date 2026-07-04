@@ -87,10 +87,10 @@ class Pipeline:
             gabor_net = DistributedGaborDataSource(
                 file_paths=[self.data_dir / 'stimuli'],
                 rf_dstr_path=self.data_dir / 'rfsizes',
-                gabor_params=self.settings["gabor_params"],
+                gabor_params=gabornet_params,
                 output_dir=self.data_dir / 'output',
             )
-            gabor_net.load_data(n_neurons=n_simulated_neurons_GaborNet,n_trials=n_repeat_trials, recalculate=recalculate_gabornet)
+            gabor_net.load_data()
             self.analyzer.load_datasource(gabor_net)
 
         if 'PixelWise' in sources:
