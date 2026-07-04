@@ -55,12 +55,12 @@ class DistributedGaborDataSource(DataSource):
         self.rf_dstr_path = rf_dstr_path
         self.gabor_params = gabor_params
         self.output_dir = output_dir
-        self._data_type = 'DistributedGaborStimulus'
+        self._data_type = 'GaborNet'
 
-    def load_data(self, n_neurons=5000, n_trials = 7, rf_size_multiplier=1, recalculate=False, rf_size_list: list[int] = None):
+    def load_data(self, rf_size_multiplier=1, recalculate=False, rf_size_list: list[int] = None):
 
         gabor_params = self.gabor_params
-        gabor_params['n_neurons'] = n_neurons
+
         if rf_size_list is None:
             rf_dst_file = self.rf_dstr_path / 'rf_dstr.csv'
             rf_dstr = pd.read_csv(rf_dst_file)['RF_size_px']
@@ -76,9 +76,9 @@ class DistributedGaborDataSource(DataSource):
         )
         images_names_duplicated = []
         for i_n in images_names:
-            for i in range(n_trials):
+            for i in range(gabor_params['n_trials']):
                 images_names_duplicated.append(i_n)
-        self._data = create_distributed_gabor(images, gabor_params, self.output_dir, n_trials=n_trials, recalculate=recalculate)
+        self._data = create_distributed_gabor(images, gabor_params, self.output_dir)
         metadata = process_image_names(images_names_duplicated)
 
         self._metadata.process_and_append(metadata)

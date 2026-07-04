@@ -36,6 +36,37 @@ if __name__ == "__main__":
         h5_locations_ori = {
             'data':'X',
             'labels': 'y/orientation_deg'
+        },
+        gabornet_params = {
+            'n_neurons': 5612,
+            'n_trials': 7,
+            'recalculate_gabornet': False,
+            'fano_factor': 1,
+            'sensor_noise_std': 2,
+            "orientation_dict": {
+                "0": 0.18,
+                "15": 0.104,
+                "30": 0.066,
+                "45": 0.043,
+                "60": 0.053,
+                "75": 0.066,
+                "90": 0.097,
+                "105": 0.106,
+                "120": 0.087,
+                "135": 0.087,
+                "150": 0.058,
+                "165": 0.053
+            },
+            "wavelengths": [
+                8.4,
+                7.94,
+                8.4,
+                11.84,
+                16.81,
+                23.78,
+                23.78
+            ],
+            "gamma": 0.5,
         }
     )
 

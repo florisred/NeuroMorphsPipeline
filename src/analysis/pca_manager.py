@@ -46,14 +46,13 @@ class PCAManager:
         for key, ds in self.datasources.items():
             # if the pca_type is full, make sure that it has that
             if 'full' in pca_types:
-
+                if pca_on_anchors:
+                    fit_data = ds.anchors
+                    pca_name = f'{key}AnchorSpace_full'
+                else:
+                    fit_data = ds.data
+                    pca_name = f'{key}_full'
                 if pca_name not in self.cache:
-                    if pca_on_anchors:
-                        fit_data = ds.anchors
-                        pca_name = f'{key}AnchorSpace_full'
-                    else:
-                        fit_data = ds.data
-                        pca_name = f'{key}_full'
                     pca_data = self.run_pca(
                         all_data=ds.data, fit_data=fit_data,
                         n_components=comps, metadata=ds.metadata, pca_type='full'

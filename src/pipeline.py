@@ -56,9 +56,8 @@ class Pipeline:
     def load_data_sources(
             self,
             sources: list,
-            n_simulated_neurons_GaborNet: int=500,
             n_repeat_trials:int=7,
-            recalculate_gabornet:bool=False,
+            gabornet_params: dict|None=None,
             h5_locations_textures:dict|None=None,
             h5_locations_ori:dict|None=None
     ):
