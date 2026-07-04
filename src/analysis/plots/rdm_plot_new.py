@@ -110,9 +110,10 @@ def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
             # Plot individual RDM for this cycle + datasource
             rdv.show_rdm(
                 rdm_cv,
+                show_colorbar='figure',
                 pattern_descriptor='conds',
-                figsize=(15, 15),
-                cmap='viridis'
+                figsize=(20, 15),
+                cmap='rocket'
             )
             plt.title(f"{data_source} - {cycle_name}")
             plt.savefig(cycle_output_dir / f"{data_source}.png")
@@ -217,11 +218,11 @@ def _rdm_analysis(
 
         rdv.show_rdm(
             rdm_cv,
-            #show_colorbar='figure',
+            show_colorbar='figure',
             pattern_descriptor='conds',
             rdm_descriptor=data_source,
             figsize=(30,30),
-            cmap='viridis'
+            cmap='rocket'
         )
         plt.savefig(output_dir / f"{key}.png")
         plt.close()

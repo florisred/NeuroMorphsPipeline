@@ -12,7 +12,9 @@ from pathlib import Path
 import concurrent.futures
 
 
-def _process_single_image(img_idx, img, neuron_param_dict, n_trials, fano_factor, sensor_noise_std):
+def _process_single_image(
+    img_idx, img, neuron_param_dict, n_trials, fano_factor, sensor_noise_std
+):
     n_neurons = len(neuron_param_dict)
     img_features = np.zeros((n_trials, n_neurons))
 
@@ -23,11 +25,18 @@ def _process_single_image(img_idx, img, neuron_param_dict, n_trials, fano_factor
         if img_crop.size == 0:
             raise AssertionError("Cropped image does not contain pixels")
 
-        res_even = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_even"])
-        res_odd = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_odd"])
+        res_even = cv2.filter2D(
+            img_crop, cv2.CV_32F, neuron_params["kernel_even"]
+        )
+        res_odd = cv2.filter2D(
+            img_crop, cv2.CV_32F, neuron_params["kernel_odd"]
+        )
 
-        magnitude = np.sqrt(res_even ** 2 + res_odd ** 2)
-        base_activation = np.mean(magnitude)
+        magnitude = np.sqrt(res_even**2 + res_odd**2)
+
+        # UPGRADE: Switch from np.mean to np.max (Max Pooling)
+        # This prevents background pixels from diluting localized feature activations
+        base_activation = np.max(magnitude)
 
         mu = base_activation * 100
         if mu > 0:
@@ -43,15 +52,17 @@ def _process_single_image(img_idx, img, neuron_param_dict, n_trials, fano_factor
 
     return img_idx, img_features
 
-def create_distributed_gabor(images: np.ndarray, gabor_params: dict, output_dir: Path) -> pd.DataFrame:
+
+def create_distributed_gabor(
+    images: np.ndarray, gabor_params: dict, output_dir: Path
+) -> pd.DataFrame:
     gabor_save_file = output_dir / "GaborNetCalculatedCache.npy"
-    if not gabor_params['recalculate_gabornet']:
+    if not gabor_params["recalculate_gabornet"]:
         if gabor_save_file.exists():
-            print('GaborNet Feature Matrix found. Loading...')
+            print("GaborNet Feature Matrix found. Loading...")
             return pd.DataFrame(np.load(gabor_save_file))
 
     # Extract parameters
-    wavelengths = gabor_params["wavelengths"]
     gamma = gabor_params["gamma"]
     receptive_field_sizes = gabor_params["receptive_field_sizes"]
     n_neurons = gabor_params["n_neurons"]
@@ -62,86 +73,116 @@ def create_distributed_gabor(images: np.ndarray, gabor_params: dict, output_dir:
     orientations = [int(key) for key in orientation_dict.keys()]
     orientation_probs = list(orientation_dict.values())
 
-    # Build neuron parameters AND precompute Gabor kernels
     print("Generating neurons and precomputing Gabor kernels...")
-    # Create the parameters for each neuron
     neuron_param_dict = {}
     img_shape = images[0].shape
 
     for i in range(n_neurons):
         neuron_param_dict[i] = {}
+
+        # Safe local scoping for orientation selection
         orientation = np.random.choice(orientations, 1, p=orientation_probs)[0]
         neuron_param_dict[i]["orientation"] = orientation
         neuron_param_dict[i]["gamma"] = gamma
 
-        # 1. Assign wavelength first so we know the required minimum kernel size
-        wavelength = random.choice(wavelengths)
+        # UPGRADE 1: Anchor directly to your empirical biological RF sizes first
+        receptive_field_size = random.choice(receptive_field_sizes)
+
+        # UPGRADE 2: Derive wavelength dynamically from RF size via a biological scaling law
+        # V1 neurons typically fit 2.3 to 3.5 cycles inside their receptive field width
+        cycles = np.random.uniform(2.3, 3.5)
+        wavelength = receptive_field_size / cycles
         neuron_param_dict[i]["wavelength"] = wavelength
+
+        # Compute kernel size and explicitly clamp it to ensure it fits within the cropped bounds
         ksize = int(wavelength * 2) | 1
+        if ksize > receptive_field_size:
+            ksize = (
+                receptive_field_size
+                if (receptive_field_size % 2 == 1)
+                else (receptive_field_size - 1)
+            )
 
-        # 2. Find an empirical RF size that can actually fit this specific kernel
-        # and safely fit within the image boundaries
-        valid_rf_sizes = [rf for rf in receptive_field_sizes if ksize <= rf < min(img_shape)]
+        # Define the center of your image canvas
+        center_y, center_x = img_shape[0] // 2, img_shape[1] // 2
 
-        if not valid_rf_sizes:
-            # Fallback if the image itself is too small for the kernel
-            raise ValueError(f"Image size {img_shape} is too small for a Gabor kernel of size {ksize}")
+        # Define standard deviation (spread)—e.g., 1/4th of the image size
+        sigma_y, sigma_x = img_shape[0] // 4, img_shape[1] // 4
 
-        receptive_field_size = random.choice(valid_rf_sizes)
-
-        # 3. Locate the receptive field on the image
         while True:
-            receptive_field_location = (np.random.randint(0, img_shape[0]), np.random.randint(0, img_shape[1]))
-            x1 = receptive_field_location[1] - receptive_field_size // 2
-            x2 = x1 + receptive_field_size
-            y1 = receptive_field_location[0] - receptive_field_size // 2
-            y2 = y1 + receptive_field_size
+            # Sample from a normal (Gaussian) distribution centered on the middle
+            rf_center_y = int(np.random.normal(center_y, sigma_y))
+            rf_center_x = int(np.random.normal(center_x, sigma_x))
 
-            # Ensure the bounding box rests entirely inside the image frame
+            x1 = rf_center_x - receptive_field_size // 2
+            x2 = x1 + receptive_field_size
+            y1 = rf_center_y - receptive_field_size // 2
+            y2 = y1 + receptive_field_size
+            # Ensure the generated crop fits safely within the frame boundaries
             if 0 <= x1 and x2 <= img_shape[1] and 0 <= y1 and y2 <= img_shape[0]:
                 break
+            else:
+                print(f'crop out of bounds with receptive field size {receptive_field_size}, retrying with a smaller receptive field size...')
+                if receptive_field_size > 10:
+                    receptive_field_size = receptive_field_size - 5
 
+
+        # Locate the receptive field randomly on the image frame
         neuron_param_dict[i]["receptive_field"] = [[x1, y1], [x2, y2]]
 
-        # Precompute kernels here so we only do it once per neuron total!
+        # Precompute spatial-frequency matched kernels
         theta = np.deg2rad(orientation)
         sigma = 0.5 * wavelength
-        ksize = int(wavelength * 2) | 1
-        neuron_param_dict[i]["kernel_even"] = cv2.getGaborKernel((ksize, ksize), sigma, theta, wavelength, gamma, 0,
-                                                                 ktype=cv2.CV_32F)
-        neuron_param_dict[i]["kernel_odd"] = cv2.getGaborKernel((ksize, ksize), sigma, theta, wavelength, gamma,
-                                                                np.pi / 2, ktype=cv2.CV_32F)
-
-    # 3. Parallelize across images using Multiprocessing
+        neuron_param_dict[i]["kernel_even"] = cv2.getGaborKernel(
+            (ksize, ksize), sigma, theta, wavelength, gamma, 0, ktype=cv2.CV_32F
+        )
+        neuron_param_dict[i]["kernel_odd"] = cv2.getGaborKernel(
+            (ksize, ksize),
+            sigma,
+            theta,
+            wavelength,
+            gamma,
+            np.pi / 2,
+            ktype=cv2.CV_32F,
+        )
+    # Parallelize across images using Multiprocessing
     final_feature_matrix = np.zeros((len(images) * n_trials, n_neurons))
     start_time = time.time()
 
     print(f"Processing {len(images)} images across parallel workers...")
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        # Submit all tasks to the pool
         futures = [
-            executor.submit(_process_single_image, i, img, neuron_param_dict, n_trials, fano_factor, sensor_noise_std)
+            executor.submit(
+                _process_single_image,
+                i,
+                img,
+                neuron_param_dict,
+                n_trials,
+                fano_factor,
+                sensor_noise_std,
+            )
             for i, img in enumerate(images)
         ]
 
-        # Process results as they complete to keep the live ETA working
-        for completed_count, future in enumerate(concurrent.futures.as_completed(futures), 1):
+        for completed_count, future in enumerate(
+            concurrent.futures.as_completed(futures), 1
+        ):
             img_idx, img_features = future.result()
 
-            # Map the local chunk back into the global matrix in the correct spot
             start_row = img_idx * n_trials
             end_row = start_row + n_trials
             final_feature_matrix[start_row:end_row, :] = img_features
 
-            # ETA Calculations
             elapsed_seconds = time.time() - start_time
             avg_time_per_img = elapsed_seconds / completed_count
             images_remaining = len(images) - completed_count
             eta_seconds = avg_time_per_img * images_remaining
 
-            print(f"Processed image {completed_count}/{len(images)} | "
-                  f"Time Taken: {format_seconds(elapsed_seconds)} | "
-                  f"ETA: {format_seconds(eta_seconds)}")
+            print(
+                f"Processed image {completed_count}/{len(images)} | "
+                f"Time Taken: {format_seconds(elapsed_seconds)} | "
+                f"ETA: {format_seconds(eta_seconds)}"
+            )
 
     print("Scaling and saving features...")
     normalized_features = scale_session(final_feature_matrix)
