@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from src.utils.utils import process_image_names, load_images
-from src.helper.gabor_helper import create_distributed_gabor, process_gabor
+from src.helper.gabor_helper import create_distributed_gabor, process_gabor, create_retinodivnorm_gabornet
 
 class StimulusGaborDataSource(DataSource):
     def __init__(self, file_paths: list[Path], gabor_params: dict, output_dir: Path):
@@ -50,12 +50,15 @@ class StimulusPixelWiseDataSource(DataSource):
         self._metadata.synchronize_with_data(self.data)
 
 class DistributedGaborDataSource(DataSource):
-    def __init__(self, file_paths: list[Path], rf_dstr_path: Path, gabor_params: dict, output_dir: Path):
+    def __init__(self, file_paths: list[Path], rf_dstr_path: Path, gabor_params: dict, output_dir: Path, retinodivnorm = False):
         super().__init__(file_paths)
         self.rf_dstr_path = rf_dstr_path
         self.gabor_params = gabor_params
         self.output_dir = output_dir
-        self._data_type = 'GaborNet'
+        if retinodivnorm:
+            self._data_type = 'RetinodivnormGaborNet'
+        else:
+            self._data_type = 'GaborNet'
 
     def load_data(self, rf_size_multiplier=1, recalculate=False, rf_size_list: list[int] = None):
 
@@ -78,11 +81,15 @@ class DistributedGaborDataSource(DataSource):
         for i_n in images_names:
             for i in range(gabor_params['n_trials']):
                 images_names_duplicated.append(i_n)
-        self._data = create_distributed_gabor(images, gabor_params, self.output_dir)
+        if self._data_type == 'RetinodivnormGaborNet':
+            self._data = create_retinodivnorm_gabornet(images, gabor_params, self.output_dir)
+        else:
+            self._data = create_distributed_gabor(images, gabor_params, self.output_dir)
         metadata = process_image_names(images_names_duplicated)
 
         self._metadata.process_and_append(metadata)
 
         self._data.index = self._metadata.morph_names
         self._metadata.synchronize_with_data(self._data)
+
 

@@ -93,6 +93,20 @@ class Pipeline:
             gabor_net.load_data(rf_size_multiplier=0.5)
             self.analyzer.load_datasource(gabor_net)
 
+        if 'RetinoDivNormGaborNet' in sources:
+            retinodivnorm_gabor_net = DistributedGaborDataSource(
+                file_paths=[self.data_dir / 'stimuli'],
+                rf_dstr_path=self.data_dir / 'rfsizes',
+                gabor_params=gabornet_params,
+                output_dir=self.data_dir / 'output',
+                retinodivnorm=True
+            )
+            retinodivnorm_gabor_net.load_data(rf_size_multiplier=0.5)
+            self.analyzer.load_datasource(
+                data_source=retinodivnorm_gabor_net,
+            )
+
+
         if 'PixelWise' in sources:
             stimulus_pixel = StimulusPixelWiseDataSource(
                 file_paths=[self.data_dir / 'stimuli'],

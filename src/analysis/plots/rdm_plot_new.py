@@ -70,7 +70,7 @@ def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
             }
 
 
-            if data_source in ['TwoPhoton', 'GaborNet']:
+            if data_source in ['TwoPhoton', 'GaborNet', 'RetinodivnormGaborNet']:
                 dataset = rsd.Dataset(
                     measurements=numpy_data,
                     obs_descriptors=obs_descriptors
@@ -179,7 +179,7 @@ def _rdm_analysis(
         }
 
 
-        if data_source in ['TwoPhoton', 'GaborNet']:
+        if data_source in ['TwoPhoton', 'GaborNet', 'RetinodivnormGaborNet']:
             dataset = rsd.Dataset(
                 measurements=numpy_data,
                 obs_descriptors=obs_descriptors
@@ -221,7 +221,7 @@ def _rdm_analysis(
             show_colorbar='figure',
             pattern_descriptor='conds',
             rdm_descriptor=data_source,
-            figsize=(30,30),
+            figsize=(20,30),
             cmap='rocket'
         )
         plt.savefig(output_dir / f"{key}.png")
@@ -240,7 +240,7 @@ def _rdm_analysis(
         comparison_matrix,
         names,
         output_dir,
-        name=f'Representational Stability_{data_source}',
+        name=f'Representational Stability {kwargs.get("rdm_type")}',
         show=True,
         full_data=True
     )
