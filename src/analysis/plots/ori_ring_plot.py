@@ -21,7 +21,8 @@ def ori_ring_plot(
         title: str,
         output_dir: Path
 ):
-    components_to_use = find_max_seperation_dataframe(pca_dataframe=ori_pca_data, num_comps=2)
+    #components_to_use = find_max_seperation_dataframe(pca_dataframe=ori_pca_data, num_comps=2)
+    components_to_use = [0,1]
     orientation_data = ori_pca_data.index.astype(int).to_numpy()
 
     plt.figure()
@@ -59,3 +60,4 @@ def ori_explained_variance_plot(
 
     plt.tight_layout()  # Keeps everything neatly contained
     plt.savefig(output_dir / f'{title}_explained_variance.svg')
+    plt.savefig(output_dir / f'{title}_explained_variance.png')

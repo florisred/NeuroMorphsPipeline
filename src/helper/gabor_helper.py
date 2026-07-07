@@ -253,116 +253,171 @@ def process_gabor(
     return pd.DataFrame(normalized_features)
 
 
-def make_smooth_map(shape, coarse_size=8, smoothness=2.0, seed=None):
-    """Generate a smooth 2D field over `shape` by upsampling coarse noise."""
+def make_smooth_map(shape: tuple, coarse_size: int = 8, smoothness: float = 2.0, seed: int = None) -> np.ndarray:
     rng = np.random.default_rng(seed)
     coarse = rng.normal(size=(coarse_size, coarse_size))
     coarse = gaussian_filter(coarse, sigma=smoothness)
-    zoom_y, zoom_x = shape[0] / coarse_size, shape[1] / coarse_size
+    zoom_y = shape[0] / coarse_size
+    zoom_x = shape[1] / coarse_size
     field = zoom(coarse, (zoom_y, zoom_x), order=3)
-    field = field[: shape[0], : shape[1]]
+    field = field[:shape[0], :shape[1]]
     return field
 
 
-def create_retinodivnorm_gabornet(
-    images: np.ndarray, gabor_params: dict, output_dir: Path
-) -> pd.DataFrame:
+def build_normalization_pool(neuron_param_dict: dict, spatial_sigma: float) -> np.ndarray:
+    n = len(neuron_param_dict)
+    centers = np.array([
+        [(p["receptive_field"][0][1] + p["receptive_field"][1][1]) / 2,
+         (p["receptive_field"][0][0] + p["receptive_field"][1][0]) / 2]
+        for p in neuron_param_dict.values()
+    ])
+    spatial_dist = np.linalg.norm(centers[:, None, :] - centers[None, :, :], axis=-1)
+    spatial_w = np.exp(-(spatial_dist ** 2) / (2 * spatial_sigma ** 2))
+    row_sums = spatial_w.sum(axis=1, keepdims=True)
+    row_sums[row_sums == 0] = 1.0
+    pool_weights = spatial_w / row_sums
+    return pool_weights
+
+
+def apply_divisive_normalization(raw_responses: np.ndarray, pool_weights: np.ndarray, semisaturation: float,
+                                 exponent: float) -> np.ndarray:
+    numerator = raw_responses ** exponent
+    pooled_drive = pool_weights @ (raw_responses ** exponent)
+    normalized = numerator / (pooled_drive + semisaturation ** exponent)
+    return normalized
+
+
+def _process_single_image_divnorm(
+        img_idx: int,
+        img: np.ndarray,
+        neuron_param_dict: dict,
+        n_trials: int,
+        fano_factor: float,
+        sensor_noise_std: float,
+        pool_weights: np.ndarray,
+        semisaturation: float,
+        norm_exponent: float
+) -> tuple:
+    n_neurons_local = len(neuron_param_dict)
+    raw_responses = np.zeros(n_neurons_local)
+
+    for j, neuron_params in neuron_param_dict.items():
+        (x1, y1), (x2, y2) = neuron_params["receptive_field"]
+        img_crop = img[y1:y2, x1:x2]
+
+        if img_crop.size == 0:
+            raise AssertionError("Cropped image does not contain pixels")
+
+        res_even = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_even"])
+        res_odd = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_odd"])
+
+        neuron_type = neuron_params["neuron_type"]
+        if neuron_type == 'simple':
+            magnitude = np.abs(res_even)
+        else:
+            magnitude = np.sqrt(res_even ** 2 + res_odd ** 2)
+        raw_responses[j] = np.mean(magnitude)
+
+    normalized_responses = apply_divisive_normalization(
+        raw_responses, pool_weights, semisaturation, norm_exponent
+    )
+
+    img_features = np.zeros((n_trials, n_neurons_local))
+    for j in range(n_neurons_local):
+        mu = normalized_responses[j] * 10
+        if mu > 0:
+            poisson_counts = np.random.poisson(mu / fano_factor, size=n_trials)
+            trial_activations = poisson_counts.astype(float) * fano_factor
+        else:
+            trial_activations = np.zeros(n_trials, dtype=float)
+        noise = np.random.normal(0, sensor_noise_std, size=n_trials)
+        img_features[:, j] = np.maximum(0, trial_activations + noise)
+
+    return img_idx, img_features
+
+
+def create_retinodivnorm_gabornet(images: np.ndarray, gabor_params: dict, output_dir: Path) -> pd.DataFrame:
     gabor_save_file = output_dir / "RetinodivnormGaborNetCalculatedCache.npy"
     if not gabor_params["recalculate_gabornet"]:
         if gabor_save_file.exists():
             print("RetinodivnormGaborNet Feature Matrix found. Loading...")
             return pd.DataFrame(np.load(gabor_save_file))
+
     img_shape = images[0].shape
     gamma = gabor_params["gamma"]
     receptive_field_sizes = gabor_params["receptive_field_sizes"]
+    receptive_field_sizes = [min(receptive_field_size, 250) for receptive_field_size in receptive_field_sizes]
+    print(f'mean receptive field size: {np.mean(receptive_field_sizes)}')
+    orientation_dict = gabor_params["orientation_dict"]
+    orientations = [int(key) for key in orientation_dict.keys()]
+    orientation_probs = list(orientation_dict.values())
     n_neurons = gabor_params["n_neurons"]
     n_trials = gabor_params["n_trials"]
     fano_factor = gabor_params["fano_factor"]
     sensor_noise_std = gabor_params["sensor_noise_std"]
+    grid_spacing = int(np.sqrt(img_shape[0] * img_shape[1] / n_neurons))
 
-    # divisive normalization params (with sensible defaults if not provided)
-    spatial_sigma = gabor_params.get("spatial_sigma", 110.0)
-    orient_sigma = gabor_params.get("orient_sigma", 30.0)
+    spatial_sigma = gabor_params.get("spatial_sigma", grid_spacing * 2.5)
     semisaturation = gabor_params.get("semisaturation", 0.1)
     norm_exponent = gabor_params.get("norm_exponent", 2.0)
 
     neuron_param_dict = {}
-    # create a grid of neurons overlay over the images
 
-    orientation_field_raw = make_smooth_map(
-        img_shape, coarse_size=10, smoothness=1.5, seed=1
-    )
-    # map raw field (roughly N(0,1)) to angles 0-180 degrees
-    orientation_field = orientation_field_raw - orientation_field_raw.min()
-    orientation_field = orientation_field / orientation_field.max() * 180.0
-    freq_field_raw = make_smooth_map(
-        img_shape, coarse_size=10, smoothness=1.5, seed=2
-    )
-    grid_spacing = int(np.sqrt(img_shape[0] * img_shape[1] / n_neurons))
-    grid_ys = np.arange(
-        grid_spacing // 2, img_shape[0] - grid_spacing // 2, grid_spacing
-    )
-    grid_xs = np.arange(
-        grid_spacing // 2, img_shape[1] - grid_spacing // 2, grid_spacing
-    )
+    freq_field_raw = make_smooth_map(img_shape, coarse_size=10, smoothness=1.5, seed=2)
+    rf_min, rf_max = min(receptive_field_sizes), max(receptive_field_sizes)
+    map_min, map_max = freq_field_raw.min(), freq_field_raw.max()
+    map_range = (map_max - map_min) if (map_max != map_min) else 1.0
+
+    grid_ys = np.arange(grid_spacing // 2, img_shape[0] - grid_spacing // 2, grid_spacing)
+    grid_xs = np.arange(grid_spacing // 2, img_shape[1] - grid_spacing // 2, grid_spacing)
     grid_points = [(gy, gx) for gy in grid_ys for gx in grid_xs]
+
     if len(grid_points) > n_neurons:
         idx = np.random.choice(len(grid_points), n_neurons, replace=False)
         grid_points = [grid_points[k] for k in idx]
     elif len(grid_points) < n_neurons:
-        extra = np.random.choice(
-            len(grid_points), n_neurons - len(grid_points), replace=True
-        )
+        extra = np.random.choice(len(grid_points), n_neurons - len(grid_points), replace=True)
         grid_points += [grid_points[k] for k in extra]
 
     jitter_std = grid_spacing * 0.25
     for i, (gy, gx) in enumerate(grid_points):
         neuron_param_dict[i] = {}
 
-        rf_center_y = int(
-            np.clip(gy + np.random.normal(0, jitter_std), 0, img_shape[0] - 1)
-        )
-        rf_center_x = int(
-            np.clip(gx + np.random.normal(0, jitter_std), 0, img_shape[1] - 1)
-        )
+        rf_center_y = int(np.clip(gy + np.random.normal(0, jitter_std), 0, img_shape[0] - 1))
+        rf_center_x = int(np.clip(gx + np.random.normal(0, jitter_std), 0, img_shape[1] - 1))
 
-        # base preference comes from the smooth map at this location
-        base_orientation = orientation_field[rf_center_y, rf_center_x]
-        orientation = (
-            base_orientation + np.random.normal(0, 10)
-        ) % 180  # small per-neuron perturbation
+        orientation = np.random.choice(orientations, 1, p=orientation_probs)[0]
 
-        receptive_field_size = random.choice(receptive_field_sizes)
+        freq_bias = freq_field_raw[rf_center_y, rf_center_x]
+        norm_bias = (freq_bias - map_min) / map_range
+
+        target_rf = rf_max - norm_bias * (rf_max - rf_min)
+        target_rf = np.clip(np.random.normal(target_rf, (rf_max - rf_min) * 0.05), rf_min, rf_max)
+
+        receptive_field_size = min(receptive_field_sizes, key=lambda x: abs(x - target_rf))
+
         half = receptive_field_size // 2
         rf_center_y = int(np.clip(rf_center_y, half, img_shape[0] - half))
         rf_center_x = int(np.clip(rf_center_x, half, img_shape[1] - half))
 
         x1, x2 = rf_center_x - half, rf_center_x - half + receptive_field_size
         y1, y2 = rf_center_y - half, rf_center_y - half + receptive_field_size
+
+        cycles = np.random.uniform(2.3, 3.5)
+        wavelength = receptive_field_size / cycles
+
         neuron_param_dict[i]["receptive_field"] = [[x1, y1], [x2, y2]]
         neuron_param_dict[i]["orientation"] = orientation
         neuron_param_dict[i]["gamma"] = gamma
-        rand = np.random.uniform(0, 1.0)
-        if rand < 0.3:
-            neuron_param_dict[i]["neuron_type"] = "simple"
-        else:
-            neuron_param_dict[i]["neuron_type"] = "complex"
-
-        # base spatial frequency preference read from the smooth freq map,
-        # used to bias wavelength selection so nearby neurons share SF tuning too
-        freq_bias = freq_field_raw[rf_center_y, rf_center_x]
-        cycles = np.clip(np.random.normal(2.9 + 0.4 * freq_bias, 0.3), 1.5, 5.0)
-        wavelength = receptive_field_size / cycles
         neuron_param_dict[i]["wavelength"] = wavelength
 
-        ksize = int(wavelength * 2) | 1
-        if ksize > receptive_field_size:
-            ksize = (
-                receptive_field_size
-                if (receptive_field_size % 2 == 1)
-                else (receptive_field_size - 1)
-            )
-        ksize = max(ksize, 3)
+        rand = np.random.uniform(0, 1.0)
+        if rand < 0.3:
+            neuron_param_dict[i]['neuron_type'] = 'simple'
+        else:
+            neuron_param_dict[i]['neuron_type'] = 'complex'
+
+        ksize = receptive_field_size if (receptive_field_size % 2 == 1) else (receptive_field_size - 1)
         neuron_param_dict[i]["ksize"] = ksize
 
         theta = np.deg2rad(orientation)
@@ -372,25 +427,17 @@ def create_retinodivnorm_gabornet(
             (ksize, ksize), sigma, theta, wavelength, gamma, 0, ktype=cv2.CV_32F
         )
         neuron_param_dict[i]["kernel_odd"] = cv2.getGaborKernel(
-            (ksize, ksize),
-            sigma,
-            theta,
-            wavelength,
-            gamma,
-            np.pi / 2,
-            ktype=cv2.CV_32F,
+            (ksize, ksize), sigma, theta, wavelength, gamma, np.pi / 2, ktype=cv2.CV_32F
         )
 
     print("Building divisive normalization pool...")
-    normalization_pool_weights = build_normalization_pool(
-        neuron_param_dict, spatial_sigma, orient_sigma
-    )
+    normalization_pool_weights = build_normalization_pool(neuron_param_dict, spatial_sigma)
 
     final_feature_matrix = np.zeros((len(images) * n_trials, n_neurons))
     start_time = time.time()
 
     print(f"Processing {len(images)} images across parallel workers...")
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
         futures = [
             executor.submit(
                 _process_single_image_divnorm,
@@ -407,9 +454,7 @@ def create_retinodivnorm_gabornet(
             for i, img in enumerate(images)
         ]
 
-        for completed_count, future in enumerate(
-            concurrent.futures.as_completed(futures), 1
-        ):
+        for completed_count, future in enumerate(concurrent.futures.as_completed(futures), 1):
             img_idx, img_features = future.result()
 
             start_row = img_idx * n_trials
@@ -432,89 +477,3 @@ def create_retinodivnorm_gabornet(
     np.save(gabor_save_file, normalized_features)
 
     return pd.DataFrame(normalized_features)
-
-
-def build_normalization_pool(neuron_param_dict, spatial_sigma, orient_sigma):
-    n = len(neuron_param_dict)
-    centers = np.array([
-        [
-            (p["receptive_field"][0][1] + p["receptive_field"][1][1]) / 2,
-            (p["receptive_field"][0][0] + p["receptive_field"][1][0]) / 2,
-        ]
-        for p in neuron_param_dict.values()
-    ])
-    orientations = np.array([p["orientation"] for p in neuron_param_dict.values()])
-
-    spatial_dist = np.linalg.norm(
-        centers[:, None, :] - centers[None, :, :], axis=-1
-    )
-    spatial_w = np.exp(-(spatial_dist**2) / (2 * spatial_sigma**2))
-
-    orient_diff = np.abs(orientations[:, None] - orientations[None, :])
-    orient_diff = np.minimum(orient_diff, 180 - orient_diff)  # circular
-    orient_w = np.exp(-(orient_diff**2) / (2 * orient_sigma**2))
-
-    pool_weights = spatial_w * orient_w
-    row_sums = pool_weights.sum(axis=1, keepdims=True)
-    row_sums[row_sums == 0] = 1.0
-    pool_weights = pool_weights / row_sums
-    return pool_weights
-
-
-def apply_divisive_normalization(
-    raw_responses, pool_weights, semisaturation, exponent
-):
-    numerator = raw_responses**exponent
-    pooled_drive = pool_weights @ (raw_responses**exponent)
-    normalized = numerator / (pooled_drive + semisaturation**exponent)
-    return normalized
-
-
-def _process_single_image_divnorm(
-    img_idx,
-    img,
-    neuron_param_dict,
-    n_trials,
-    fano_factor,
-    sensor_noise_std,
-    pool_weights,
-    semisaturation,
-    norm_exponent,
-):
-    n_neurons_local = len(neuron_param_dict)
-    raw_responses = np.zeros(n_neurons_local)
-
-    for j, neuron_params in neuron_param_dict.items():
-        (x1, y1), (x2, y2) = neuron_params["receptive_field"]
-        img_crop = img[y1:y2, x1:x2]
-
-        if img_crop.size == 0:
-            raise AssertionError("Cropped image does not contain pixels")
-
-        res_even = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_even"])
-        res_odd = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_odd"])
-        neuron_type = neuron_params["neuron_type"]
-        if neuron_type == "simple":
-            magnitude = np.abs(res_even)
-        else:
-            magnitude = np.sqrt(res_even**2 + res_odd**2)
-        raw_responses[j] = np.mean(magnitude)
-
-    normalized_responses = apply_divisive_normalization(
-        raw_responses, pool_weights, semisaturation, norm_exponent
-    )
-
-    img_features = np.zeros((n_trials, n_neurons_local))
-    for j in range(n_neurons_local):
-        mu = normalized_responses[j] * 10
-        if mu > 0:
-            poisson_counts = np.random.poisson(mu / fano_factor, size=n_trials)
-            trial_activations = poisson_counts.astype(float) * fano_factor
-        else:
-            trial_activations = np.zeros(n_trials, dtype=float)
-
-
-        noise = np.random.normal(0, sensor_noise_std, size=n_trials)
-        img_features[:, j] = np.maximum(0, trial_activations + noise)
-
-    return img_idx, img_features

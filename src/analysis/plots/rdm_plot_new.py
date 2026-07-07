@@ -31,9 +31,13 @@ def rdm_analysis_full(pca_data_dict: dict[str, PCAData], **kwargs):
             pca_data_dict_filtered[name] = pca_data
     kwargs['rdm_type'] = 'full'
     kwargs['output_dir'] = kwargs.get('output_dir') / 'rdm_cross_full'
-
     _rdm_analysis(pca_data_dict_filtered, **kwargs)
 
+def rdm_analysis_ori(pca_data_dict: dict[str, PCAData], **kwargs):
+    kwargs['rdm_type'] = 'full'
+    kwargs['output_dir'] = kwargs.get('output_dir') / 'rdm_cross_full'
+    kwargs['ori'] = True
+    _rdm_analysis(pca_data_dict, **kwargs)
 
 def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
     output_dir = kwargs.get('output_dir') / 'rdm_cross_subsets'
@@ -206,12 +210,13 @@ def _rdm_analysis(
                 method='euclidean',
                 descriptor='conds',
             )
-        unsorted_labels = rdm_cv.pattern_descriptors['conds']
-        desired = sorted_arr
-        name_to_idx = {name: i for i, name in enumerate(unsorted_labels)}
-        reorder_indices = np.array([name_to_idx[name] for name in desired])
+        if kwargs.get('ori', False) is False:
+            unsorted_labels = rdm_cv.pattern_descriptors['conds']
+            desired = sorted_arr
+            name_to_idx = {name: i for i, name in enumerate(unsorted_labels)}
+            reorder_indices = np.array([name_to_idx[name] for name in desired])
+            rdm_cv.reorder(reorder_indices)
 
-        rdm_cv.reorder(reorder_indices)
         rdm_cv.rdm_descriptors['name'] = [data_source]
         rdms.append(rdm_cv)
         rdm_vectors[key] = rdm_cv.get_vectors()[0]  # store the flat vector

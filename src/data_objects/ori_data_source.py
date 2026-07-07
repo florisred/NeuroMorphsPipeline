@@ -6,7 +6,7 @@ from data_objects.data_source import DataSource
 from data_objects.pca_data import PCAData
 from data_objects.trial_metadata import OriMetaData
 from utils.utils import load_h5_file, scale_session, load_images, ori_process_image_names
-from src.helper.gabor_helper import process_gabor, create_distributed_gabor
+from src.helper.gabor_helper import process_gabor, create_distributed_gabor, create_retinodivnorm_gabornet
 import pandas as pd
 import numpy.typing as npt
 
@@ -38,6 +38,7 @@ class OriDataSource(DataSource):
             pca_output=self._pca_data['data'].to_numpy(),
             names_list=self.names_list,
             explained_variance=self._pca_data['explained_variance'],
+            raw_data=self._data
         )
 
         if return_data: return self._pca_data['data']
@@ -94,7 +95,6 @@ class OriPixeLWiseDataSource(OriDataSource):
         processed_names = ori_process_image_names(images_names)
         data = pd.DataFrame(images_flat, index=processed_names)
         self._data = data
-        test=1
 
     def find_stimulus_cycles(self, n=3):
         return NotImplementedError("Finding stimulus cycles is not implemented in orientation tuning")
@@ -122,17 +122,21 @@ class OriGaborDataSource(OriDataSource):
         self._data = data
 
 class OriDistGaborDataSource(OriDataSource):
-    def __init__(self, file_paths: list[Path], rf_dstr_path: Path, gabor_params: dict, output_dir: Path):
+    def __init__(self, file_paths: list[Path], rf_dstr_path: Path, gabor_params: dict, output_dir: Path, retinodivnorm = False):
         super().__init__(file_paths)
-        self._data_type = "OrientationGabor"
         self.gabor_params = gabor_params
         self.output_dir = output_dir
         self.rf_dstr_path = rf_dstr_path
+        if retinodivnorm:
+            self._data_type = 'RetinodivnormGaborNet'
+        else:
+            self._data_type = 'GaborNet'
 
 
-    def load_data(self, n_neurons=500, n_trials = 10, rf_size_multiplier=1, save_and_load=True, rf_size_list: list[int] = None):
+    def load_data(self, rf_size_multiplier=1, save_and_load=True, rf_size_list: list[int] = None):
         gabor_params = self.gabor_params
-        gabor_params['n_neurons'] = n_neurons
+        n_trials = gabor_params['n_trials']
+
 
         images, images_names = load_images(
             image_dir=self.file_paths[0],
@@ -152,7 +156,10 @@ class OriDistGaborDataSource(OriDataSource):
         else:
             gabor_params['receptive_field_sizes'] = rf_size_list
 
-        data = create_distributed_gabor(images, gabor_params, self.output_dir, n_trials=n_trials, save_and_load=save_and_load)
+        if self._data_type == 'RetinodivnormGaborNet':
+            data = create_retinodivnorm_gabornet(images, gabor_params, self.output_dir)
+        else:
+            data = create_distributed_gabor(images, gabor_params, self.output_dir)
         index = pd.Index(images_names_duplicated)
         data.set_index(index, inplace=True)
         self._data = data
@@ -160,10 +167,10 @@ class OriDistGaborDataSource(OriDataSource):
 
 class OriPCAData(PCAData):
 
-    def __init__(self,pca_type: str, pca_output: npt.NDArray, names_list:list, explained_variance: npt.NDArray = None):
+    def __init__(self,pca_type: str, pca_output: npt.NDArray, names_list:list, raw_data, explained_variance: npt.NDArray = None):
         metadata = OriMetaData(names_list)
 
-        super().__init__(pca_type=pca_type, pca_output=pca_output, metadata=metadata, morph_names=pd.Index(names_list, name='morph_name'), explained_variance=explained_variance)
+        super().__init__(pca_type=pca_type, pca_output=pca_output, metadata=metadata, morph_names=pd.Index(names_list, name='morph_name'), explained_variance=explained_variance, raw_data=raw_data)
 
 
 

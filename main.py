@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     nm = Pipeline(
         data_folder= "/Users/floris/Documents/neuro_texmorphs/data", # texture
-        #data_folder = ""/home/protred/Documents/OrientationData/Ori_NeuralData/Ori_Data/" # orientation data
+        #data_folder = "/Users/floris/Documents/OrientationData/Ori_NeuralData/Ori_Data" # orientation data
     )
     nm.load_data_sources(
         sources=[
@@ -22,10 +22,12 @@ if __name__ == "__main__":
             'GaborNet',
             'RetinoDivNormGaborNet',
             'PixelWise',
-            #'ori_2p',
-            #'ori_GaborFilterBank',
-            #'ori_GaborNet',
-            #'ori_PixelWise',
+            # 'ori_2p',
+            # 'ori_GaborFilterBank',
+            # 'ori_RetinodivnormGaborNet',
+            # 'ori_GaborNet',
+            # 'ori_PixelWise',
+            # 'ori_pca'
         ],
         h5_locations_textures = {
             'data':'X',
@@ -33,14 +35,14 @@ if __name__ == "__main__":
         },
         h5_locations_ori = {
             'data':'X',
-            'labels': 'y/orientation_deg'
+            'labels': ['y/orientation_deg']
         },
         gabornet_params = {
-            'n_neurons': 3000,
+            'n_neurons': 5000,
             'n_trials': 7,
             'recalculate_gabornet': True,
-            'fano_factor': 1.4,
-            'sensor_noise_std': 0.2,
+            'fano_factor': 1.2,
+            'sensor_noise_std': 0.1,
             "orientation_dict": {
                 "0": 0.18,
                 "15": 0.104,
@@ -61,10 +63,10 @@ if __name__ == "__main__":
 
     nm.create_plots(
         plot_types = [
-            #'interactive',
-            #'subsets',
-            #'3d',
-            #'rdm_subsets',
+            'interactive',
+            'subsets',
+            '3d',
+            'rdm_subsets',
             'rdm_full',
             'anchor_rdm',
             #'classification',

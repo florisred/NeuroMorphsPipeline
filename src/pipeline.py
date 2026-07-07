@@ -8,7 +8,7 @@ import json
 from data_objects.two_photon_data_source import TwoPhotonDataSource
 from analysis.analyzer import Analyzer
 from data_objects.stimulus_data_source import StimulusGaborDataSource, StimulusPixelWiseDataSource, DistributedGaborDataSource
-from src.analysis.plots.rdm_plot import rdm_analysis_full
+from src.analysis.plots.rdm_plot_new import rdm_analysis_ori
 from src.analysis.plots.ori_ring_plot import ori_ring_plot
 
 class Pipeline:
@@ -136,10 +136,20 @@ class Pipeline:
                 file_paths=[self.data_dir / 'stimuli'],
                 output_dir=self.output_dir / 'output',
                 rf_dstr_path=self.data_dir / 'rfsizes',
-                gabor_params=self.settings["gabor_params"]
+                gabor_params=gabornet_params
             )
-            ori_dist_gabor.load_data(n_trials=n_repeat_trials)
+            ori_dist_gabor.load_data()
             self._ori_data_sources['GaborNet State Space'] = ori_dist_gabor
+        if 'ori_RetinodivnormGaborNet' in sources:
+            ori_retinodivnorm = OriDistGaborDataSource(
+                file_paths=[self.data_dir / 'stimuli'],
+                output_dir=self.output_dir / 'output',
+                rf_dstr_path=self.data_dir / 'rfsizes',
+                gabor_params=gabornet_params,
+                retinodivnorm=True
+            )
+            ori_retinodivnorm.load_data()
+            self._ori_data_sources['RetinodivnormGaborNet State Space'] = ori_retinodivnorm
         if 'ori_PixelWise' in sources:
             ori_pixel = OriPixeLWiseDataSource(
                 file_paths=[self.data_dir / 'stimuli'],
@@ -162,7 +172,7 @@ class Pipeline:
             kwargs['output_dir'] = Path(
                 f'{self.data_dir}/output/plots/ori_plots/')
             kwargs['show'] = True
-            rdm_analysis_full(pca_data_dict, **kwargs)
+            rdm_analysis_ori(pca_data_dict, **kwargs)
 
             for key, ori_data_source in self._ori_data_sources.items():
                 pca_data = ori_data_source.pca_data(n_components=n_components)

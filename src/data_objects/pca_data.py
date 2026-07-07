@@ -5,7 +5,7 @@ import numpy as np
 import copy
 
 class PCAData:
-    def __init__(self, pca_type: str, pca_output: npt.NDArray, metadata: TrialMetadata, morph_names: pd.Index, raw_data: pd.DataFrame, explained_variance: npt.NDArray = None):
+    def __init__(self, pca_type: str, pca_output: npt.NDArray, metadata: TrialMetadata, morph_names: pd.Index, raw_data: pd.DataFrame|None, explained_variance: npt.NDArray = None):
         self._pca_output = pca_output
         self.raw_data = raw_data
         self.metadata = metadata
