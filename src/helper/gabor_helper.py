@@ -263,7 +263,7 @@ def _process_single_image_divnorm(
     img_features = np.zeros((n_trials, n_neurons))
     raw_activations = np.zeros(n_neurons)
 
-    # --- Pass 1: Compute raw linear responses for all neurons ---
+    # --- Pass 1: Compute raw linear responses ---
     for j, neuron_params in neuron_param_dict.items():
         (x1, y1), (x2, y2) = neuron_params["receptive_field"]
         img_crop = img[y1:y2, x1:x2]
@@ -271,33 +271,37 @@ def _process_single_image_divnorm(
         if img_crop.size == 0:
             raise AssertionError("Cropped image does not contain pixels")
 
-        res_even = cv2.filter2D(
-            img_crop, cv2.CV_32F, neuron_params["kernel_even"]
-        )
+        res_even = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_even"])
         res_odd = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_odd"])
 
         magnitude = np.sqrt(res_even ** 2 + res_odd ** 2)
         raw_activations[j] = np.mean(magnitude)
 
     # --- Pass 2: Apply Canonical Divisive Normalization ---
-    # Equation: R_norm = (R^n) / (sigma^n + mean(R^n))
-    sigma = dn_params["sigma"]
+    sigma_base = dn_params["sigma"]
     n = dn_params["n"]
     gain = dn_params["gain"]
 
-    # Raise responses to the power of n (standard energy model uses n=2)
-    activated_powered = raw_activations ** n
+    # OPTIONAL TWEAK: Make sigma adapt to the image's average drive
+    # Set dynamic=True in dn_params to test if contrast-invariance helps
+    if dn_params.get("dynamic_sigma", False):
+        sigma = sigma_base * np.mean(raw_activations)
+    else:
+        sigma = sigma_base
 
-    # Calculate the normalization pool (average population activity prevents scaling issues with n_neurons)
+    activated_powered = raw_activations ** n
     normalization_pool = np.mean(activated_powered)
 
-    # Compute normalized activations
-    normalized_activations = activated_powered / ((sigma ** n) + normalization_pool)
+    # Add a tiny epsilon to safeguard against completely blank images
+    denom = (sigma ** n) + normalization_pool
+    normalized_activations = activated_powered / denom if denom > 0 else np.zeros_like(activated_powered)
 
     # --- Pass 3: Scale and Generate Noisy Trials ---
+    spont_floor = dn_params.get("spontaneous_rate", 0.0)  # Background noise floor
+
     for j in range(n_neurons):
-        # Scale the normalized response back to a realistic firing rate range
-        mu = normalized_activations[j] * gain
+        # Inject an optional background spontaneous firing floor
+        mu = (normalized_activations[j] * gain) + spont_floor
 
         if mu > 0:
             poisson_counts = np.random.poisson(mu / fano_factor, size=n_trials)
@@ -323,9 +327,10 @@ def create_retinodivnorm_gabornet(
     # Extract parameters
     gamma = gabor_params["gamma"]
     receptive_field_sizes = gabor_params["receptive_field_sizes"]
-    receptive_field_sizes = [min(receptive_field_size, 250) for receptive_field_size in receptive_field_sizes]
-    receptive_field_sizes = [max(receptive_field_size, 8) for receptive_field_size in receptive_field_sizes]
+    receptive_field_sizes = [min(rf, 250) for rf in receptive_field_sizes]
+    receptive_field_sizes = [max(rf, 8) for rf in receptive_field_sizes]
     print(f"Mean receptive_field_sizes: {np.mean(receptive_field_sizes)}")
+
     n_neurons = gabor_params["n_neurons"]
     n_trials = gabor_params["n_trials"]
     fano_factor = gabor_params["fano_factor"]
@@ -334,15 +339,17 @@ def create_retinodivnorm_gabornet(
     orientations = [int(key) for key in orientation_dict.keys()]
     orientation_probs = list(orientation_dict.values())
 
-    # Safely extract Divisive Normalization parameters with sensible V1 defaults
     dn_params = gabor_params.get(
         "dn_params",
-        {"sigma": 0.2, "n": 2.0, "gain": 20.0}
+        {"sigma": 0.2, "n": 2.0, "gain": 20.0, "dynamic_sigma": False, "spontaneous_rate": 0.0}
     )
 
     print("Generating neurons and precomputing Gabor kernels...")
     neuron_param_dict = {}
     img_shape = images[0].shape
+
+    center_y, center_x = img_shape[0] // 2, img_shape[1] // 2
+    sigma_y, sigma_x = img_shape[0] // 4, img_shape[1] // 4
 
     for i in range(n_neurons):
         neuron_param_dict[i] = {}
@@ -359,25 +366,19 @@ def create_retinodivnorm_gabornet(
 
         ksize = int(wavelength * 2) | 1
         if ksize > receptive_field_size:
-            ksize = (
-                receptive_field_size
-                if (receptive_field_size % 2 == 1)
-                else (receptive_field_size - 1)
-            )
+            ksize = receptive_field_size if (receptive_field_size % 2 == 1) else (receptive_field_size - 1)
 
-        center_y, center_x = img_shape[0] // 2, img_shape[1] // 2
-        sigma_y, sigma_x = img_shape[0] // 4, img_shape[1] // 4
+        # --- FIX: Constant-time bounding box initialization ---
+        half = receptive_field_size // 2
+        min_y, max_y = half, img_shape[0] - half
+        min_x, max_x = half, img_shape[1] - half
 
-        while True:
-            rf_center_y = int(np.random.normal(center_y, sigma_y))
-            rf_center_x = int(np.random.normal(center_x, sigma_x))
+        # Sample and immediately clip to legal positions (Zero risk of infinite loops)
+        rf_center_y = int(np.clip(np.random.normal(center_y, sigma_y), min_y, max_y))
+        rf_center_x = int(np.clip(np.random.normal(center_x, sigma_x), min_x, max_x))
 
-            x1 = rf_center_x - receptive_field_size // 2
-            x2 = x1 + receptive_field_size
-            y1 = rf_center_y - receptive_field_size // 2
-            y2 = y1 + receptive_field_size
-            if 0 <= x1 and x2 <= img_shape[1] and 0 <= y1 and y2 <= img_shape[0]:
-                break
+        x1, x2 = rf_center_x - half, rf_center_x - half + receptive_field_size
+        y1, y2 = rf_center_y - half, rf_center_y - half + receptive_field_size
 
         neuron_param_dict[i]["receptive_field"] = [[x1, y1], [x2, y2]]
 
@@ -387,37 +388,23 @@ def create_retinodivnorm_gabornet(
             (ksize, ksize), sigma, theta, wavelength, gamma, 0, ktype=cv2.CV_32F
         )
         neuron_param_dict[i]["kernel_odd"] = cv2.getGaborKernel(
-            (ksize, ksize),
-            sigma,
-            theta,
-            wavelength,
-            gamma,
-            np.pi / 2,
-            ktype=cv2.CV_32F,
+            (ksize, ksize), sigma, theta, wavelength, gamma, np.pi / 2, ktype=cv2.CV_32F
         )
 
     final_feature_matrix = np.zeros((len(images) * n_trials, n_neurons))
     start_time = time.time()
 
-    print(f"Processing {len(images)} images across parallel workers with Divisive Normalization...")
+    print(f"Processing {len(images)} images across parallel workers...")
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = [
             executor.submit(
                 _process_single_image_divnorm,
-                i,
-                img,
-                neuron_param_dict,
-                n_trials,
-                fano_factor,
-                sensor_noise_std,
-                dn_params,
+                i, img, neuron_param_dict, n_trials, fano_factor, sensor_noise_std, dn_params
             )
             for i, img in enumerate(images)
         ]
 
-        for completed_count, future in enumerate(
-                concurrent.futures.as_completed(futures), 1
-        ):
+        for completed_count, future in enumerate(concurrent.futures.as_completed(futures), 1):
             img_idx, img_features = future.result()
 
             start_row = img_idx * n_trials
