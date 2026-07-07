@@ -39,7 +39,7 @@ if __name__ == "__main__":
             'n_neurons': 3000,
             'n_trials': 7,
             'recalculate_gabornet': True,
-            'fano_factor': 1.2,
+            'fano_factor': 1.4,
             'sensor_noise_std': 0.2,
             "orientation_dict": {
                 "0": 0.18,

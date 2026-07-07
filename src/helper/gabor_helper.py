@@ -38,7 +38,6 @@ def _process_single_image(
             trial_activations = poisson_counts.astype(float) * fano_factor
         else:
             trial_activations = np.zeros(n_trials, dtype=float)
-
         noise = np.random.normal(0, sensor_noise_std, size=n_trials)
         img_features[:, j] = np.maximum(0, trial_activations + noise)
 
@@ -77,16 +76,12 @@ def create_distributed_gabor(
         neuron_param_dict[i]["orientation"] = orientation
         neuron_param_dict[i]["gamma"] = gamma
 
-        # UPGRADE 1: Anchor directly to your empirical biological RF sizes first
         receptive_field_size = random.choice(receptive_field_sizes)
 
-        # UPGRADE 2: Derive wavelength dynamically from RF size via a biological scaling law
-        # V1 neurons typically fit 2.3 to 3.5 cycles inside their receptive field width
         cycles = np.random.uniform(2.3, 3.5)
         wavelength = receptive_field_size / cycles
         neuron_param_dict[i]["wavelength"] = wavelength
 
-        # Compute kernel size and explicitly clamp it to ensure it fits within the cropped bounds
         ksize = int(wavelength * 2) | 1
         if ksize > receptive_field_size:
             ksize = (
@@ -95,14 +90,11 @@ def create_distributed_gabor(
                 else (receptive_field_size - 1)
             )
 
-        # Define the center of your image canvas
         center_y, center_x = img_shape[0] // 2, img_shape[1] // 2
 
-        # Define standard deviation (spread)—e.g., 1/4th of the image size
         sigma_y, sigma_x = img_shape[0] // 4, img_shape[1] // 4
 
         while True:
-            # Sample from a normal (Gaussian) distribution centered on the middle
             rf_center_y = int(np.random.normal(center_y, sigma_y))
             rf_center_x = int(np.random.normal(center_x, sigma_x))
 
@@ -110,7 +102,6 @@ def create_distributed_gabor(
             x2 = x1 + receptive_field_size
             y1 = rf_center_y - receptive_field_size // 2
             y2 = y1 + receptive_field_size
-            # Ensure the generated crop fits safely within the frame boundaries
             if 0 <= x1 and x2 <= img_shape[1] and 0 <= y1 and y2 <= img_shape[0]:
                 break
             else:
@@ -120,10 +111,8 @@ def create_distributed_gabor(
                 if receptive_field_size > 10:
                     receptive_field_size = receptive_field_size - 5
 
-        # Locate the receptive field randomly on the image frame
         neuron_param_dict[i]["receptive_field"] = [[x1, y1], [x2, y2]]
 
-        # Precompute spatial-frequency matched kernels
         theta = np.deg2rad(orientation)
         sigma = 0.5 * wavelength
         neuron_param_dict[i]["kernel_even"] = cv2.getGaborKernel(
@@ -138,7 +127,6 @@ def create_distributed_gabor(
             np.pi / 2,
             ktype=cv2.CV_32F,
         )
-    # Parallelize across images using Multiprocessing
     final_feature_matrix = np.zeros((len(images) * n_trials, n_neurons))
     start_time = time.time()
 
@@ -524,6 +512,7 @@ def _process_single_image_divnorm(
             trial_activations = poisson_counts.astype(float) * fano_factor
         else:
             trial_activations = np.zeros(n_trials, dtype=float)
+
 
         noise = np.random.normal(0, sensor_noise_std, size=n_trials)
         img_features[:, j] = np.maximum(0, trial_activations + noise)
