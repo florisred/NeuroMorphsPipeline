@@ -38,11 +38,11 @@ if __name__ == "__main__":
             'labels': ['y/orientation_deg']
         },
         gabornet_params = {
-            'n_neurons': 5000,
+            'n_neurons': 5612,
             'n_trials': 7,
-            'recalculate_gabornet': True,
+            'recalculate_gabornet': False,
             'fano_factor': 1.2,
-            'sensor_noise_std': 0.1,
+            'sensor_noise_std': 0.02,
             "orientation_dict": {
                 "0": 0.18,
                 "15": 0.104,
@@ -57,16 +57,16 @@ if __name__ == "__main__":
                 "150": 0.058,
                 "165": 0.053
             },
-            "gamma": 0.5,
+            "gamma": 0.5
         }
     )
 
     nm.create_plots(
         plot_types = [
             'interactive',
-            'subsets',
+            #'subsets',
             '3d',
-            'rdm_subsets',
+            #'rdm_subsets',
             'rdm_full',
             'anchor_rdm',
             #'classification',

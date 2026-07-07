@@ -90,7 +90,7 @@ class Pipeline:
                 gabor_params=gabornet_params,
                 output_dir=self.data_dir / 'output',
             )
-            gabor_net.load_data(rf_size_multiplier=0.5)
+            gabor_net.load_data(rf_size_multiplier=1)
             self.analyzer.load_datasource(gabor_net)
 
         if 'RetinoDivNormGaborNet' in sources:
@@ -101,7 +101,7 @@ class Pipeline:
                 output_dir=self.data_dir / 'output',
                 retinodivnorm=True
             )
-            retinodivnorm_gabor_net.load_data(rf_size_multiplier=0.5)
+            retinodivnorm_gabor_net.load_data(rf_size_multiplier=1)
             self.analyzer.load_datasource(
                 data_source=retinodivnorm_gabor_net,
             )
