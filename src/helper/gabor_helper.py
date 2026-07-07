@@ -130,7 +130,7 @@ def create_distributed_gabor(
     start_time = time.time()
 
     print(f"Processing {len(images)} images across parallel workers...")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=3) as executor:
+    with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = [
             executor.submit(
                 _process_single_image,
@@ -252,12 +252,39 @@ def process_gabor(
     return pd.DataFrame(normalized_features)
 
 
-def _process_single_image_divnorm(
-        img_idx, img, neuron_param_dict, n_trials, fano_factor, sensor_noise_std, dn_params
-):
-    """Processes a single image, applying Gabor filters followed by Divisive Normalization
+def _build_spatial_normalization_weights(neuron_param_dict, spatial_sigma):
+    """
+    Precomputes a row-normalized Gaussian weight matrix based on the physical
+    distance between neuron receptive field centers.
+    """
+    n = len(neuron_param_dict)
+    centers = np.zeros((n, 2))
 
-    across the neural population before generating noisy trials.
+    for i in range(n):
+        (x1, y1), (x2, y2) = neuron_param_dict[i]["receptive_field"]
+        centers[i] = [(x1 + x2) / 2.0, (y1 + y2) / 2.0]
+
+    # Calculate all pairwise Euclidean distances between RF centers
+    # dist_matrix shape: (n_neurons, n_neurons)
+    dist_matrix = np.linalg.norm(centers[:, None, :] - centers[None, :, :], axis=-1)
+
+    # Convert distances to Gaussian weights
+    weight_matrix = np.exp(-(dist_matrix ** 2) / (2 * (spatial_sigma ** 2)))
+
+    # CRITICAL: Row-normalize so every neuron calculates a weighted *mean* of its neighbors,
+    # rather than a destructive sum. (Diagonal is 1, so row sums are always >= 1.0)
+    row_sums = weight_matrix.sum(axis=1, keepdims=True)
+    weight_matrix = weight_matrix / row_sums
+
+    # Cast to float32 to save memory when passing to parallel workers
+    return weight_matrix.astype(np.float32)
+
+
+def _process_single_image_divnorm(
+        img_idx, img, neuron_param_dict, weight_matrix, n_trials, fano_factor, sensor_noise_std, dn_params
+):
+    """Processes a single image, applying Gabor filters followed by Spatially-Weighted
+    Divisive Normalization across the neural population before generating noisy trials.
     """
     n_neurons = len(neuron_param_dict)
     img_features = np.zeros((n_trials, n_neurons))
@@ -277,30 +304,29 @@ def _process_single_image_divnorm(
         magnitude = np.sqrt(res_even ** 2 + res_odd ** 2)
         raw_activations[j] = np.mean(magnitude)
 
-    # --- Pass 2: Apply Canonical Divisive Normalization ---
+    # --- Pass 2: Apply Localized Divisive Normalization ---
     sigma_base = dn_params["sigma"]
     n = dn_params["n"]
     gain = dn_params["gain"]
 
-    # OPTIONAL TWEAK: Make sigma adapt to the image's average drive
-    # Set dynamic=True in dn_params to test if contrast-invariance helps
     if dn_params.get("dynamic_sigma", False):
         sigma = sigma_base * np.mean(raw_activations)
     else:
         sigma = sigma_base
 
     activated_powered = raw_activations ** n
-    normalization_pool = np.mean(activated_powered)
 
-    # Add a tiny epsilon to safeguard against completely blank images
+    # FAST LOCAL POOLING: Matrix multiplication blends the raw activations
+    # based on the precomputed physical distance between the neurons.
+    normalization_pool = weight_matrix @ activated_powered
+
     denom = (sigma ** n) + normalization_pool
-    normalized_activations = activated_powered / denom if denom > 0 else np.zeros_like(activated_powered)
+    normalized_activations = activated_powered / denom if np.all(denom > 0) else np.zeros_like(activated_powered)
 
     # --- Pass 3: Scale and Generate Noisy Trials ---
-    spont_floor = dn_params.get("spontaneous_rate", 0.0)  # Background noise floor
+    spont_floor = dn_params.get("spontaneous_rate", 0.0)
 
     for j in range(n_neurons):
-        # Inject an optional background spontaneous firing floor
         mu = (normalized_activations[j] * gain) + spont_floor
 
         if mu > 0:
@@ -319,7 +345,7 @@ def create_retinodivnorm_gabornet(
         images: np.ndarray, gabor_params: dict, output_dir: Path
 ) -> pd.DataFrame:
     gabor_save_file = output_dir / "RetinoDivNormGaborNetCalculatedCache.npy"
-    if not gabor_params["recalculate_gabornet"]:
+    if not gabor_params.get("recalculate_gabornet", True):
         if gabor_save_file.exists():
             print("GaborNet Feature Matrix found. Loading...")
             return pd.DataFrame(np.load(gabor_save_file))
@@ -327,8 +353,8 @@ def create_retinodivnorm_gabornet(
     # Extract parameters
     gamma = gabor_params["gamma"]
     receptive_field_sizes = gabor_params["receptive_field_sizes"]
-    receptive_field_sizes = [min(rf, 250) for rf in receptive_field_sizes]
-    receptive_field_sizes = [max(rf, 8) for rf in receptive_field_sizes]
+    receptive_field_sizes = [int(min(rf, 500)) for rf in receptive_field_sizes]
+    receptive_field_sizes = [int(max(rf, 8)) for rf in receptive_field_sizes]
     print(f"Mean receptive_field_sizes: {np.mean(receptive_field_sizes)}")
 
     n_neurons = gabor_params["n_neurons"]
@@ -339,9 +365,17 @@ def create_retinodivnorm_gabornet(
     orientations = [int(key) for key in orientation_dict.keys()]
     orientation_probs = list(orientation_dict.values())
 
+    # Safely extract Divisive Normalization parameters
     dn_params = gabor_params.get(
         "dn_params",
-        {"sigma": 0.2, "n": 2.0, "gain": 20.0, "dynamic_sigma": False, "spontaneous_rate": 0.0}
+        {
+            "sigma": 0.2,
+            "n": 2.0,
+            "gain": 20.0,
+            "spatial_sigma": 120,  # The radius (in pixels) of local inhibition
+            "dynamic_sigma": True,
+            "spontaneous_rate": 0.1
+        }
     )
 
     print("Generating neurons and precomputing Gabor kernels...")
@@ -368,12 +402,11 @@ def create_retinodivnorm_gabornet(
         if ksize > receptive_field_size:
             ksize = receptive_field_size if (receptive_field_size % 2 == 1) else (receptive_field_size - 1)
 
-        # --- FIX: Constant-time bounding box initialization ---
+        # Constant-time bounding box logic (No while loop)
         half = receptive_field_size // 2
         min_y, max_y = half, img_shape[0] - half
         min_x, max_x = half, img_shape[1] - half
 
-        # Sample and immediately clip to legal positions (Zero risk of infinite loops)
         rf_center_y = int(np.clip(np.random.normal(center_y, sigma_y), min_y, max_y))
         rf_center_x = int(np.clip(np.random.normal(center_x, sigma_x), min_x, max_x))
 
@@ -391,15 +424,18 @@ def create_retinodivnorm_gabornet(
             (ksize, ksize), sigma, theta, wavelength, gamma, np.pi / 2, ktype=cv2.CV_32F
         )
 
+    print("Building spatial normalization matrix...")
+    weight_matrix = _build_spatial_normalization_weights(neuron_param_dict, dn_params["spatial_sigma"])
+
     final_feature_matrix = np.zeros((len(images) * n_trials, n_neurons))
     start_time = time.time()
 
     print(f"Processing {len(images)} images across parallel workers...")
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
         futures = [
             executor.submit(
                 _process_single_image_divnorm,
-                i, img, neuron_param_dict, n_trials, fano_factor, sensor_noise_std, dn_params
+                i, img, neuron_param_dict, weight_matrix, n_trials, fano_factor, sensor_noise_std, dn_params
             )
             for i, img in enumerate(images)
         ]
