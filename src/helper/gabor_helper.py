@@ -315,19 +315,14 @@ def _process_single_image_divnorm(
         sigma = sigma_base
 
     activated_powered = raw_activations ** n
-
-    # FAST LOCAL POOLING: Matrix multiplication blends the raw activations
-    # based on the precomputed physical distance between the neurons.
     normalization_pool = weight_matrix @ activated_powered
 
     denom = (sigma ** n) + normalization_pool
     normalized_activations = activated_powered / denom if np.all(denom > 0) else np.zeros_like(activated_powered)
-
-    # --- Pass 3: Scale and Generate Noisy Trials ---
     spont_floor = dn_params.get("spontaneous_rate", 0.0)
 
     for j in range(n_neurons):
-        mu = (normalized_activations[j] * gain) + spont_floor
+        mu = (normalized_activations[j] * gain) + spont_floor #normalized activations for divnorm, raw_activations for without divnorm
 
         if mu > 0:
             poisson_counts = np.random.poisson(mu / fano_factor, size=n_trials)
@@ -372,9 +367,9 @@ def create_retinodivnorm_gabornet(
             "sigma": 0.2,
             "n": 2.0,
             "gain": 20.0,
-            "spatial_sigma": 120,  # The radius (in pixels) of local inhibition
+            "spatial_sigma": 200,
             "dynamic_sigma": True,
-            "spontaneous_rate": 0.1
+            "spontaneous_rate":0.5
         }
     )
 
@@ -394,7 +389,7 @@ def create_retinodivnorm_gabornet(
 
         receptive_field_size = random.choice(receptive_field_sizes)
 
-        cycles = np.random.uniform(1.3, 3.5)
+        cycles = np.random.uniform(1.0, 3.0)
         wavelength = receptive_field_size / cycles
         neuron_param_dict[i]["wavelength"] = wavelength
 

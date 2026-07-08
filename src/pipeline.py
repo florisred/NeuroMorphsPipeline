@@ -158,7 +158,7 @@ class Pipeline:
             ori_pixel.load_data()
             self._ori_data_sources['Raw Pixel State-Space'] = ori_pixel
         if 'ori_pca' in sources:
-            n_components=8
+            n_components=3
             ori_output_dir = self.output_dir / 'ori_plots'
             ori_output_dir.mkdir(exist_ok=True)
 

@@ -37,6 +37,7 @@ def rdm_analysis_ori(pca_data_dict: dict[str, PCAData], **kwargs):
     kwargs['rdm_type'] = 'full'
     kwargs['output_dir'] = kwargs.get('output_dir') / 'rdm_cross_full'
     kwargs['ori'] = True
+    print('starting rdm_analysis_ori')
     _rdm_analysis(pca_data_dict, **kwargs)
 
 def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
@@ -173,8 +174,12 @@ def _rdm_analysis(
     for key, pca_data in pca_data_dict.items():
         data_source = pca_data.data_source
         sorted_arr = pca_data.metadata.morph_names.drop_duplicates().to_numpy()
-        numpy_data = pca_data.raw_data.to_numpy()
-        names = pca_data.raw_data.index.to_numpy()
+        if True:#kwargs.get('ori', False) is False:
+            numpy_data = pca_data.raw_data.to_numpy()
+            names = pca_data.raw_data.index.to_numpy()
+        else:
+            numpy_data = pca_data.pca_data.to_numpy()
+            names = pca_data.pca_data.index.to_numpy()
         session_labels, min_trials = make_session_labels(names)
 
         obs_descriptors = {

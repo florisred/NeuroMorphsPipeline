@@ -3,7 +3,7 @@ import logging
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name )s - %(levelname)s - %(message)s'
 )
 
 if __name__ == "__main__":
@@ -19,15 +19,15 @@ if __name__ == "__main__":
         sources=[
             '2p',
             'GaborFilterBank',
-            'GaborNet',
+            #'GaborNet',
             'RetinoDivNormGaborNet',
             'PixelWise',
-            # 'ori_2p',
-            # 'ori_GaborFilterBank',
-            # 'ori_RetinodivnormGaborNet',
+             #'ori_2p',
+             #'ori_GaborFilterBank',
+             #'ori_RetinodivnormGaborNet',
             # 'ori_GaborNet',
-            # 'ori_PixelWise',
-            # 'ori_pca'
+             #'ori_PixelWise',
+             #'ori_pca'
         ],
         h5_locations_textures = {
             'data':'X',
@@ -38,11 +38,11 @@ if __name__ == "__main__":
             'labels': ['y/orientation_deg']
         },
         gabornet_params = {
-            'n_neurons': 5612,
-            'n_trials': 7,
-            'recalculate_gabornet': False,
-            'fano_factor': 1.2,
-            'sensor_noise_std': 0.02,
+            'n_neurons': 4000,
+            'n_trials': 5,
+            'recalculate_gabornet': True,
+            'fano_factor': 1.3,
+            'sensor_noise_std': 0.05,
             "orientation_dict": {
                 "0": 0.18,
                 "15": 0.104,
