@@ -10,6 +10,7 @@ import rsatoolbox.rdm as rdr
 import rsatoolbox.vis as rdv
 import rsatoolbox.data.noise as rsn
 
+
 def rdm_analysis_anchor(
         pca_data_dict: dict[str, PCAData],
         **kwargs
@@ -33,6 +34,7 @@ def rdm_analysis_full(pca_data_dict: dict[str, PCAData], **kwargs):
     kwargs['output_dir'] = kwargs.get('output_dir') / 'rdm_cross_full'
     _rdm_analysis(pca_data_dict_filtered, **kwargs)
 
+
 def rdm_analysis_ori(pca_data_dict: dict[str, PCAData], **kwargs):
     kwargs['rdm_type'] = 'full'
     kwargs['output_dir'] = kwargs.get('output_dir') / 'rdm_cross_full'
@@ -40,18 +42,16 @@ def rdm_analysis_ori(pca_data_dict: dict[str, PCAData], **kwargs):
     print('starting rdm_analysis_ori')
     _rdm_analysis(pca_data_dict, **kwargs)
 
+
 def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
     output_dir = kwargs.get('output_dir') / 'rdm_cross_subsets'
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Group by cycle name, across datasources
-    # keys look like: 'TwoPhoton_honeycomb__sand__turtoise'
-    # we want to group by 'honeycomb__sand__turtoise'
     cycles = defaultdict(dict)
     for key, pca_data in pca_data_dict.items():
         if 'subset' not in key: continue
         data_source = pca_data.data_source
-        cycle_name = key[len(data_source) + 1:]  # strip datasource prefix
+        cycle_name = key[len(data_source) + 1:]
         cycles[cycle_name][data_source] = pca_data
 
     all_stability_matrices = []
@@ -73,7 +73,6 @@ def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
                 'conds': names,
                 'sessions': session_labels
             }
-
 
             if data_source in ['TwoPhoton', 'GaborNet', 'RetinodivnormGaborNet']:
                 dataset = rsd.Dataset(
@@ -103,7 +102,6 @@ def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
                     descriptor='conds',
                 )
 
-            # Reorder to match sorted_arr
             unsorted_labels = rdm_cv.pattern_descriptors['conds']
             name_to_idx = {name: i for i, name in enumerate(unsorted_labels)}
             reorder_indices = np.array([
@@ -112,21 +110,27 @@ def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
             ])
             rdm_cv.reorder(reorder_indices)
 
-            # Plot individual RDM for this cycle + datasource
-            rdv.show_rdm(
+            # --- PLOT FIXES FOR SUBSETS ---
+            fig, ax, _ = rdv.show_rdm(
                 rdm_cv,
-                show_colorbar='figure',
+                show_colorbar='panel',  # Keeps colorbar tightly bound near the axis
                 pattern_descriptor='conds',
-                figsize=(20, 15),
+                figsize=(10, 10),
                 cmap='rocket'
             )
-            plt.title(f"{data_source} - {cycle_name}")
-            plt.savefig(cycle_output_dir / f"{data_source}.png")
-            plt.close()
+
+            # Access the matrix main axis (first axis in the figure)
+            main_ax = fig.axes[0]
+            main_ax.set_yticks(np.arange(len(sorted_arr)))
+            main_ax.set_yticklabels(sorted_arr, rotation=0, fontsize=8)
+            main_ax.set_xticklabels(sorted_arr, rotation=45, ha='right', fontsize=8)
+
+            plt.title(f"{data_source} - {cycle_name}", pad=20)
+            plt.savefig(cycle_output_dir / f"{data_source}.png", bbox_inches='tight')
+            plt.close(fig)
 
             rdm_vectors[data_source] = rdm_cv.get_vectors()[0]
 
-        # Stability matrix for this cycle
         source_names = list(rdm_vectors.keys())
         n = len(source_names)
         stability_matrix = np.zeros((n, n))
@@ -146,9 +150,8 @@ def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
         )
 
         all_stability_matrices.append(stability_matrix)
-        stability_names = source_names  # same across all cycles
+        stability_names = source_names
 
-    # Average stability matrix across all 24 cycles
     if all_stability_matrices:
         safe_matrices = np.clip(all_stability_matrices, -0.9999, 0.9999)
         z_matrices = np.arctanh(safe_matrices)
@@ -163,18 +166,19 @@ def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
             full_data=False
         )
 
+
 def _rdm_analysis(
         pca_data_dict: dict[str, PCAData],
         **kwargs
 ):
     rdms = []
-    rdm_vectors = {}  # store as dict of name -> distance vector
+    rdm_vectors = {}
     output_dir = kwargs.get('output_dir')
     output_dir.mkdir(parents=True, exist_ok=True)
     for key, pca_data in pca_data_dict.items():
         data_source = pca_data.data_source
         sorted_arr = pca_data.metadata.morph_names.drop_duplicates().to_numpy()
-        if True:#kwargs.get('ori', False) is False:
+        if True:
             numpy_data = pca_data.raw_data.to_numpy()
             names = pca_data.raw_data.index.to_numpy()
         else:
@@ -184,9 +188,8 @@ def _rdm_analysis(
 
         obs_descriptors = {
             'conds': names,
-            'sessions': session_labels  # <-- store the array here
+            'sessions': session_labels
         }
-
 
         if data_source in ['TwoPhoton', 'GaborNet', 'RetinodivnormGaborNet']:
             dataset = rsd.Dataset(
@@ -224,18 +227,27 @@ def _rdm_analysis(
 
         rdm_cv.rdm_descriptors['name'] = [data_source]
         rdms.append(rdm_cv)
-        rdm_vectors[key] = rdm_cv.get_vectors()[0]  # store the flat vector
+        rdm_vectors[key] = rdm_cv.get_vectors()[0]
 
-        rdv.show_rdm(
+        # --- PLOT FIXES FOR MAIN ANALYSIS ---
+        fig, ax, _ = rdv.show_rdm(
             rdm_cv,
-            show_colorbar='figure',
-            pattern_descriptor='conds',
+            show_colorbar='panel',  # Clean side-panel placement
+            #pattern_descriptor='conds',
             rdm_descriptor=data_source,
-            figsize=(20,30),
+            figsize=(10, 10),
             cmap='rocket'
         )
-        plt.savefig(output_dir / f"{key}.png")
-        plt.close()
+
+        # Explicitly extract the active grid axis to assign dual-axis labels
+        # main_ax = fig.axes[0]
+        # main_ax.set_yticks(np.arange(len(sorted_arr)))
+        # main_ax.set_yticklabels(sorted_arr, rotation=0, fontsize=8)
+        # main_ax.set_xticklabels(sorted_arr, rotation=45, ha='right', fontsize=8)
+
+        plt.title(f"{key}", pad=20)
+        plt.savefig(output_dir / f"{key}.png", bbox_inches='tight')
+        plt.close(fig)
 
     names = list(rdm_vectors.keys())
     n = len(names)
@@ -256,24 +268,15 @@ def _rdm_analysis(
     )
 
 
-
 def make_session_labels(cond_labels: np.ndarray) -> np.ndarray:
-    """
-    Assigns session labels 0..n_trials-1 within each condition.
-    For conditions with fewer trials than the max, cycles the labels
-    so every condition has the same number of unique session values.
-    """
     unique_conds, counts = np.unique(cond_labels, return_counts=True)
     min_trials = counts.min()
-
     session_labels = np.zeros(len(cond_labels), dtype=int)
-
     for cond in unique_conds:
         mask = cond_labels == cond
         n = mask.sum()
         indices = np.where(mask)[0]
         session_labels[indices] = np.arange(n) % min_trials
-
     return session_labels, min_trials
 
 
@@ -286,6 +289,6 @@ def _plot_stability(matrix, labels, output_dir, name, show, full_data):
     plt.title(f"{name}", pad=20, fontsize=15)
     plt.tight_layout()
     if full_data: name = name + (f"full")
-    plt.savefig(output_dir / f"{name}.png")
+    plt.savefig(output_dir / f"{name}.png", bbox_inches='tight')
     if show: plt.show()
-    plt.close()  # Critical: Prevent memory leaks
+    plt.close()
