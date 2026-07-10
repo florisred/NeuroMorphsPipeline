@@ -104,7 +104,7 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], **kwargs):
         plt.ylabel(f'PC{pc_y + 1}')
         plt.title(f'{pca_data.name} 2D (PC{pc_x + 1} vs PC{pc_y + 1})')
         plt.grid(True, linestyle=':', alpha=0.6)
-        plt.savefig(output_dir / f'{pca_data.name}.png')
+        plt.savefig(output_dir / f'{pca_data.name}.svg')
         plt.close()
 
     curv_output_dir = output_dir / 'curvature_metrics'
@@ -128,14 +128,14 @@ def create_subset_plots(pca_data_dict: dict[str, PCAData], **kwargs):
             col_wrap=3, height=3, facet_kws={'sharey': False}
         )
         plt.title(f'{data_source_name}')
-        plt.savefig(curv_output_dir / f'deviation_data_{data_source_name}.png')
+        plt.savefig(curv_output_dir / f'deviation_data_{data_source_name}.svg')
 
         heatmap_df = df_plot.pivot(index="pair", columns="step", values="deviation")
 
         plt.figure(figsize=(10, 12))
         sns.heatmap(heatmap_df, annot=False, cmap="viridis")
         plt.title(f"Curvature Progression per Pair, {data_source_name}")
-        plt.savefig(curv_output_dir / f'curvature_progression_{data_source_name}.png')
+        plt.savefig(curv_output_dir / f'curvature_progression_{data_source_name}.svg')
 
 
 
