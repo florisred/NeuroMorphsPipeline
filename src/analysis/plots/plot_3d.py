@@ -96,9 +96,12 @@ def _build_pair_color_map(all_pair_keys: list[str]) -> dict[str, str]:
 def create_3d_plot(pca_data_dict: dict[str, PCAData], **kwargs):
     output_dir = kwargs.get("output_dir") / '3d_plots'
     output_dir.mkdir(parents=True, exist_ok=True)
+    with_subsets = kwargs.get('make_3d_plots_with_subsets', True)
 
     for key, pca_data in pca_data_dict.items():
         # Build a stable colour map over ALL pair keys for this data source
+        if not with_subsets:
+            if 'subset' in key: continue
         all_pair_keys = pca_data.metadata.get_pair_keys(unique=True, dropna=True, values=True)
         pair_color_map = _build_pair_color_map(list(all_pair_keys))
 

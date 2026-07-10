@@ -3,7 +3,7 @@ import logging
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name )s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
 if __name__ == "__main__":
@@ -12,8 +12,8 @@ if __name__ == "__main__":
     """
 
     nm = Pipeline(
-        data_folder= "/Users/floris/Documents/neuro_texmorphs/data", # texture
-        #data_folder = "/Users/floris/Documents/OrientationData/Ori_NeuralData/Ori_Data" # orientation data
+        data_folder= "/home/protred/Documents/neuro_texmorphs/data/", # texture
+        #data_folder = "/home/protred/Documents/OrientationData/Ori_NeuralData/Ori_Data/" # orientation data
     )
     nm.load_data_sources(
         sources=[
@@ -22,13 +22,14 @@ if __name__ == "__main__":
             #'GaborNet',
             'RetinoDivNormGaborNet',
             'PixelWise',
-             #'ori_2p',
-             #'ori_GaborFilterBank',
-             #'ori_RetinodivnormGaborNet',
-            # 'ori_GaborNet',
-             #'ori_PixelWise',
-             #'ori_pca'
+            #  'ori_2p',
+            #  'ori_GaborFilterBank',
+            #  'ori_RetinodivnormGaborNet',
+            # #'ori_GaborNet',
+            #  'ori_PixelWise',
+            #  'ori_pca'
         ],
+        n_repeat_trials=7,
         h5_locations_textures = {
             'data':'X',
             'labels': ['y/pair_key', 'y/step_index', 'y/src_cat', 'y/dst_cat']
@@ -38,9 +39,9 @@ if __name__ == "__main__":
             'labels': ['y/orientation_deg']
         },
         gabornet_params = {
-            'n_neurons': 4000,
-            'n_trials': 5,
-            'recalculate_gabornet': True,
+            'n_neurons': 5612,
+            'n_trials': 7,
+            'recalculate_gabornet': False,
             'fano_factor': 1.3,
             'sensor_noise_std': 0.05,
             "orientation_dict": {
@@ -63,22 +64,24 @@ if __name__ == "__main__":
 
     nm.create_plots(
         plot_types = [
-            'interactive',
+            #'interactive',
             #'subsets',
-            '3d',
+            #'3d',
             #'rdm_subsets',
             'rdm_full',
-            'anchor_rdm',
+            #'anchor_rdm',
             #'classification',
             #'explained_variance_full',
             #'explained_variance_subsets'
         ],
+        # plot config is a dictionary passed into all plots as plot_config. Can be used to give arguments to specific plots
         plot_config = {
             #'show': False, # decides if the plots are shown in the IDE or not, they are always saved
             'subsets_n' : 3, # decides the number of anchors in the subsets plot, use 3 for the triplets
             'subsets_with_variability' : False, # if there are multiple trials, plot all of them next to the average
-            'n_components' : 3,
-            'PCA_on_anchors': False # If true, the PCA space will be created by only looking at the anchors (so 3 for triplets, or 8 for full data)
+            'n_components' : 100,
+            'PCA_on_anchors': False, # If true, the PCA space will be created by only looking at the anchors (so 3 for triplets, or 8 for full data)
+            'make_3d_plots_with_subsets': False # If True, 3d_plot will also include the subsets, if they are loaded in before (default = True)
         }
     )
 
