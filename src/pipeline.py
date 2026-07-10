@@ -122,7 +122,7 @@ class Pipeline:
                 metadata_locations=h5_locations_ori['labels'],
             )
             ori_two_photon.load_data()
-            self._ori_data_sources['Neural-Sate Space'] = ori_two_photon
+            self._ori_data_sources['Neural-State Space'] = ori_two_photon
         if 'ori_GaborFilterBank' in sources:
             ori_gabor = OriGaborDataSource(
                 file_paths=[self.data_dir / 'stimuli'],
@@ -158,7 +158,7 @@ class Pipeline:
             ori_pixel.load_data()
             self._ori_data_sources['Raw Pixel State-Space'] = ori_pixel
         if 'ori_pca' in sources:
-            n_components=3
+            n_components=12
             ori_output_dir = self.output_dir / 'ori_plots'
             ori_output_dir.mkdir(exist_ok=True)
 
