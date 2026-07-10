@@ -9,6 +9,7 @@ import numpy.typing as npt
 import pandas as pd
 from scipy.ndimage import gaussian_filter, zoom
 from src.utils.utils import format_seconds, scale_session
+import random
 
 
 def _process_single_image(
@@ -293,15 +294,19 @@ def _process_single_image_divnorm(
     # --- Pass 1: Compute raw linear responses ---
     for j, neuron_params in neuron_param_dict.items():
         (x1, y1), (x2, y2) = neuron_params["receptive_field"]
+        neuron_type = neuron_params["type"]
         img_crop = img[y1:y2, x1:x2]
 
         if img_crop.size == 0:
             raise AssertionError("Cropped image does not contain pixels")
 
         res_even = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_even"])
-        res_odd = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_odd"])
-
-        magnitude = np.sqrt(res_even ** 2 + res_odd ** 2)
+        if neuron_type == 'complex':
+            res_odd = cv2.filter2D(img_crop, cv2.CV_32F, neuron_params["kernel_odd"])
+            magnitude = np.sqrt(res_even ** 2 + res_odd ** 2)
+        elif neuron_type == 'simple':
+            magnitude = np.maximum(0, res_even)
+        else: raise AssertionError("Unknown neuron type")
         raw_activations[j] = np.mean(magnitude)
 
     # --- Pass 2: Apply Localized Divisive Normalization ---
@@ -348,7 +353,7 @@ def create_retinodivnorm_gabornet(
     # Extract parameters
     gamma = gabor_params["gamma"]
     receptive_field_sizes = gabor_params["receptive_field_sizes"]
-    receptive_field_sizes = [int(min(rf, 500)) for rf in receptive_field_sizes]
+    receptive_field_sizes = [int(min(rf, 250)) for rf in receptive_field_sizes]
     receptive_field_sizes = [int(max(rf, 8)) for rf in receptive_field_sizes]
     print(f"Mean receptive_field_sizes: {np.mean(receptive_field_sizes)}")
 
@@ -364,12 +369,13 @@ def create_retinodivnorm_gabornet(
     dn_params = gabor_params.get(
         "dn_params",
         {
-            "sigma": 0.2,
+            "sigma": 0.3,
             "n": 2.0,
             "gain": 20.0,
-            "spatial_sigma": 200,
-            "dynamic_sigma": True,
-            "spontaneous_rate":0.5
+            "spatial_sigma": 150,
+            "dynamic_sigma": False,
+            "spontaneous_rate":1,
+            'probability_simple': 0.7
         }
     )
 
@@ -386,6 +392,9 @@ def create_retinodivnorm_gabornet(
         orientation = np.random.choice(orientations, 1, p=orientation_probs)[0]
         neuron_param_dict[i]["orientation"] = orientation
         neuron_param_dict[i]["gamma"] = gamma
+        neuron_param_dict[i]['type'] = 'simple' if random.uniform(0, 1) < dn_params['probability_simple'] else 'complex'
+
+
 
         receptive_field_size = random.choice(receptive_field_sizes)
 
@@ -426,7 +435,7 @@ def create_retinodivnorm_gabornet(
     start_time = time.time()
 
     print(f"Processing {len(images)} images across parallel workers...")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = [
             executor.submit(
                 _process_single_image_divnorm,
