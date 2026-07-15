@@ -18,6 +18,11 @@ def rdm_analysis_anchor(
     pca_data_dict_filtered = {}
     for name, pca_data in pca_data_dict.items():
         if 'anchor' in name:
+            # # optionally filter out anchors
+            # raw_data = pca_data.raw_data
+            # filtered_raw_data = raw_data[raw_data.index != 'turtoise']
+            # pca_data.raw_data = filtered_raw_data
+            # pca_data._grouped_pca_data = pca_data._grouped_pca_data[pca_data._grouped_pca_data.index != 'turtoise']
             pca_data_dict_filtered[name] = pca_data
     kwargs['rdm_type'] = 'anchor'
     kwargs['output_dir'] = kwargs.get('output_dir') / 'rdm_cross_anchor'
@@ -119,14 +124,9 @@ def rdm_analysis_subsets(pca_data_dict: dict[str, PCAData], **kwargs):
                 cmap='rocket'
             )
 
-            # Access the matrix main axis (first axis in the figure)
-            main_ax = fig.axes[0]
-            main_ax.set_yticks(np.arange(len(sorted_arr)))
-            main_ax.set_yticklabels(sorted_arr, rotation=0, fontsize=8)
-            main_ax.set_xticklabels(sorted_arr, rotation=45, ha='right', fontsize=8)
 
             plt.title(f"{data_source} - {cycle_name}", pad=20)
-            plt.savefig(cycle_output_dir / f"{data_source}.png", bbox_inches='tight')
+            plt.savefig(cycle_output_dir / f"{data_source}.svg", bbox_inches='tight')
             plt.close(fig)
 
             rdm_vectors[data_source] = rdm_cv.get_vectors()[0]
@@ -177,7 +177,7 @@ def _rdm_analysis(
     output_dir.mkdir(parents=True, exist_ok=True)
     for key, pca_data in pca_data_dict.items():
         data_source = pca_data.data_source
-        sorted_arr = pca_data.metadata.morph_names.drop_duplicates().to_numpy()
+        sorted_arr = pca_data.pca_data.index.drop_duplicates().to_numpy()
         if True:
             numpy_data = pca_data.raw_data.to_numpy()
             names = pca_data.raw_data.index.to_numpy()
@@ -233,7 +233,7 @@ def _rdm_analysis(
         fig, ax, _ = rdv.show_rdm(
             rdm_cv,
             show_colorbar='panel',  # Clean side-panel placement
-            #pattern_descriptor='conds',
+            pattern_descriptor='conds',
             rdm_descriptor=data_source,
             figsize=(10, 10),
             cmap='rocket'
@@ -246,7 +246,7 @@ def _rdm_analysis(
         # main_ax.set_xticklabels(sorted_arr, rotation=45, ha='right', fontsize=8)
 
         plt.title(f"{key}", pad=20)
-        plt.savefig(output_dir / f"{key}.png", bbox_inches='tight')
+        plt.savefig(output_dir / f"{key}.svg", bbox_inches='tight')
         plt.close(fig)
 
     names = list(rdm_vectors.keys())
@@ -289,6 +289,6 @@ def _plot_stability(matrix, labels, output_dir, name, show, full_data):
     plt.title(f"{name}", pad=20, fontsize=15)
     plt.tight_layout()
     if full_data: name = name + (f"full")
-    plt.savefig(output_dir / f"{name}.png", bbox_inches='tight')
+    plt.savefig(output_dir / f"{name}.svg", bbox_inches='tight')
     if show: plt.show()
     plt.close()
