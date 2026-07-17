@@ -266,18 +266,15 @@ def _build_spatial_normalization_weights(neuron_param_dict, spatial_sigma):
         centers[i] = [(x1 + x2) / 2.0, (y1 + y2) / 2.0]
 
     # Calculate all pairwise Euclidean distances between RF centers
-    # dist_matrix shape: (n_neurons, n_neurons)
     dist_matrix = np.linalg.norm(centers[:, None, :] - centers[None, :, :], axis=-1)
 
     # Convert distances to Gaussian weights
     weight_matrix = np.exp(-(dist_matrix ** 2) / (2 * (spatial_sigma ** 2)))
 
-    # CRITICAL: Row-normalize so every neuron calculates a weighted *mean* of its neighbors,
-    # rather than a destructive sum. (Diagonal is 1, so row sums are always >= 1.0)
+    # Row-normalize so every neuron calculates a weighted mean of its neighbors
     row_sums = weight_matrix.sum(axis=1, keepdims=True)
     weight_matrix = weight_matrix / row_sums
 
-    # Cast to float32 to save memory when passing to parallel workers
     return weight_matrix.astype(np.float32)
 
 
@@ -306,7 +303,9 @@ def _process_single_image_divnorm(
             magnitude = np.sqrt(res_even ** 2 + res_odd ** 2)
         elif neuron_type == 'simple':
             magnitude = np.maximum(0, res_even)
-        else: raise AssertionError("Unknown neuron type")
+        else:
+            raise AssertionError("Unknown neuron type")
+
         raw_activations[j] = np.mean(magnitude)
 
     # --- Pass 2: Apply Localized Divisive Normalization ---
@@ -327,7 +326,7 @@ def _process_single_image_divnorm(
     spont_floor = dn_params.get("spontaneous_rate", 0.0)
 
     for j in range(n_neurons):
-        mu = (normalized_activations[j] * gain) + spont_floor #normalized activations for divnorm, raw_activations for without divnorm
+        mu = (normalized_activations[j] * gain) + spont_floor
 
         if mu > 0:
             poisson_counts = np.random.poisson(mu / fano_factor, size=n_trials)
@@ -365,7 +364,7 @@ def create_retinodivnorm_gabornet(
     orientations = [int(key) for key in orientation_dict.keys()]
     orientation_probs = list(orientation_dict.values())
 
-    # Safely extract Divisive Normalization parameters
+    # Default Divisive Normalization parameters updated based on biology
     dn_params = gabor_params.get(
         "dn_params",
         {
@@ -394,8 +393,6 @@ def create_retinodivnorm_gabornet(
         neuron_param_dict[i]["gamma"] = gamma
         neuron_param_dict[i]['type'] = 'simple' if random.uniform(0, 1) < dn_params['probability_simple'] else 'complex'
 
-
-
         receptive_field_size = random.choice(receptive_field_sizes)
 
         cycles = np.random.uniform(1.0, 3.0)
@@ -406,7 +403,6 @@ def create_retinodivnorm_gabornet(
         if ksize > receptive_field_size:
             ksize = receptive_field_size if (receptive_field_size % 2 == 1) else (receptive_field_size - 1)
 
-        # Constant-time bounding box logic (No while loop)
         half = receptive_field_size // 2
         min_y, max_y = half, img_shape[0] - half
         min_x, max_x = half, img_shape[1] - half
@@ -420,7 +416,12 @@ def create_retinodivnorm_gabornet(
         neuron_param_dict[i]["receptive_field"] = [[x1, y1], [x2, y2]]
 
         theta = np.deg2rad(orientation)
+
         sigma = 0.5 * wavelength
+        # if orientation == 0:
+        #     sigma *= 1.5
+        # if orientation == 90:
+        #     sigma *= 1.5
         neuron_param_dict[i]["kernel_even"] = cv2.getGaborKernel(
             (ksize, ksize), sigma, theta, wavelength, gamma, 0, ktype=cv2.CV_32F
         )
@@ -435,7 +436,7 @@ def create_retinodivnorm_gabornet(
     start_time = time.time()
 
     print(f"Processing {len(images)} images across parallel workers...")
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=12) as executor:
         futures = [
             executor.submit(
                 _process_single_image_divnorm,
@@ -456,6 +457,7 @@ def create_retinodivnorm_gabornet(
             images_remaining = len(images) - completed_count
             eta_seconds = avg_time_per_img * images_remaining
 
+            # Helper functions like format_seconds and scale_session assumed external
             print(
                 f"Processed image {completed_count}/{len(images)} | "
                 f"Time Taken: {format_seconds(elapsed_seconds)} | "

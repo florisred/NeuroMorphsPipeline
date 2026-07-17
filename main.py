@@ -64,21 +64,21 @@ if __name__ == "__main__":
 
     nm.create_plots(
         plot_types = [
-            #'interactive',
-            #'subsets',
-            #'3d',
+            # 'interactive',
+            # 'subsets',
+            # '3d',
             #'rdm_subsets',
             'rdm_full',
-            #'anchor_rdm',
-            #'classification',
+            'anchor_rdm',
+            # 'classification',
             #'explained_variance_full',
-            #'explained_variance_subsets'
+            # 'explained_variance_subsets'
         ],
         # plot config is a dictionary passed into all plots as plot_config. Can be used to give arguments to specific plots
         plot_config = {
             #'show': False, # decides if the plots are shown in the IDE or not, they are always saved
             'subsets_n' : 3, # decides the number of anchors in the subsets plot, use 3 for the triplets
-            'subsets_with_variability' : False, # if there are multiple trials, plot all of them next to the average
+            'subsets_with_variability' : True, # if there are multiple trials, plot all of them next to the average
             'n_components' : 100,
             'PCA_on_anchors': False, # If true, the PCA space will be created by only looking at the anchors (so 3 for triplets, or 8 for full data)
             'make_3d_plots_with_subsets': False # If True, 3d_plot will also include the subsets, if they are loaded in before (default = True)
